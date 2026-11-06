@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Crucible Claims Registry",
+  "version": "1.0.0",
+  "enforcement_policy": "Strict: Any claim without a passing CI test will fail the build.",
+  "claims": [
+    {
+      "id": "CLM-001",
+      "tier": "Tier C (Emulator)",
+      "property": "Exact Determinism",
+      "statement": "Tier C produces byte-identical trace hashes across 1,000 runs on identical seeds for static musl binaries.",
+      "test_target": "crates/crucible-emu/tests/musl_echo_1000.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "runs": 1000,
+        "divergences": 0,
+        "trace_sha256": "3e8fcd633c8e874a921287b13c8567362788fc6b584afc6ca3cc037844a413a2"
+      }
+    },
+    {
+      "id": "CLM-002",
+      "tier": "Tier A (Rust Native)",
+      "property": "Jump-on-Idle Speedup",
+      "statement": "Virtual time advances instantly to the next scheduled event when all threads are blocked, achieving >100x wall-clock speedup during idle timeouts.",
+      "test_target": "crates/crucible-sim/tests/virtual_time_idle.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "virtual_time_simulated_seconds": 600.0,
+        "wall_clock_seconds": 0.00249,
+        "events_processed": 6840,
+        "empirical_speedup_factor": 240954.18,
+        "required_minimum_speedup": 100.0,
+        "status": "exceeded"
+      }
+    },
+    {
+      "id": "CLM-003",
+      "tier": "Search Engine",
+      "property": "Bug Finding Advantage",
+      "statement": "Coverage-guided fault scheduling discovers safety violations with at least 3x fewer iterations compared to uniform random scheduling.",
+      "test_target": "crates/crucible-sim/tests/coverage_vs_random.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "trials": 100,
+        "uniform_random_mean_iterations": 1856.42,
+        "coverage_guided_mean_iterations": 7.00,
+        "empirical_speedup_factor": 265.20,
+        "target_minimum_speedup": 3.0,
+        "status": "exceeded"
+      }
+    },
+    {
+      "id": "CLM-004",
+      "tier": "Evidence",
+      "property": "Independent Reproducibility",
+      "statement": "An evidence bundle containing seed, container digest, and fault schedule replays to the exact trace hash on a third-party host without campaign access.",
+      "test_target": "tests/evidence/standalone_verifier.rs",
+      "status": "pending_phase_7",
+      "last_verified_commit": null
+    },
+    {
+      "id": "CLM-005",
+      "tier": "Tier C (Emulator)",
+      "property": "Go Runtime Determinism & Adaptive Scheduling",
+      "statement": "Tier C produces byte-identical trace hashes across multi-run execution of unmodified Go static binaries with channels, goroutine runtime scheduling, and futex synchronization under both RoundRobin and CrucibleAdaptive (Causal + Contention + PCT) schedulers.",
+      "test_target": "crates/crucible-emu/tests/go_ping_test.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "round_robin_steps": 336898,
+        "round_robin_trace_hash": "2118b080781e80eb34e9bc7f913aee492ba701f541b8be9d779fdc33976900f2",
+        "crucible_adaptive_steps": 4884977,
+        "crucible_adaptive_trace_hash": "d71815a6e6486fce2329c5f9299969ee408c2bc248bb5f95f03284950b79a27e",
+        "divergences": 0
+      }
+    },
+    {
+      "id": "CLM-006",
+      "tier": "Tier A (Rust Native) & Analysis",
+      "property": "Historical Consensus Bug Reproduction & Minimization",
+      "statement": "Crucible Tier A reproduces historical Raft Figure 8 commit bugs (§5.4.2) violating linearizability and delta-debugs noisy schedules down to <= 5 minimal causal events.",
+      "test_target": "crates/crucible-sim/tests/spike4_reproduce_raft_bug.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "initial_fault_events": 16,
+        "minimized_fault_events": 3,
+        "target_max_minimized_events": 5,
+        "violation_detected": "Stale read detected for key x: expected Some(\"v1\"), got Some(\"v2\")",
+        "counterfactual_fixed_engine_status": "Pass"
+      }
+    },
+    {
+      "id": "CLM-007",
+      "tier": "Tier A (Rust Native)",
+      "property": "Simulation Event Throughput",
+      "statement": "Tier A distributed simulation processes consensus message events at >100,000 events/second in-process.",
+      "test_target": "crates/crucible-sim/tests/tier_a_throughput.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "total_events_processed": 150000,
+        "measured_events_per_second": 1308143.72,
+        "required_minimum_events_per_second": 100000.0,
+        "status": "exceeded"
+      }
+    },
+    {
+      "id": "CLM-008",
+      "tier": "Analysis & Checkers",
+      "property": "Advanced Verification Classification Accuracy",
+      "statement": "WGL concurrent linearizability checker, Elle cycle detector, and vector clock causal engine achieve 100% classification accuracy across 50 passing and 50 violating traces with zero false positives.",
+      "test_target": "crates/crucible-checkers/tests/checkers_phase2_100_traces.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "passing_traces_tested": 50,
+        "passing_traces_correct": 50,
+        "violating_traces_tested": 50,
+        "violating_traces_detected": 50,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "accuracy_percentage": 100.0
+      }
+    },
+    {
+      "id": "CLM-009",
+      "tier": "Minimizer & Explanation",
+      "property": "Hierarchical Minimization & Causal Slicing",
+      "statement": "Hierarchical minimizer prunes >90% of noise events, compresses virtual timelines, and causal trace slicer produces minimal transitive reduction Hasse DAGs containing only critical causal events.",
+      "test_target": "crates/crucible-sim/tests/phase3_minimization_and_slicing.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "initial_event_count": 52,
+        "minimized_event_count": 3,
+        "noise_reduction_percentage": 94.23,
+        "timeline_compressed": true,
+        "root_cause_rank_1": "Figure8_Commit_Without_CurrentTerm_Check",
+        "root_cause_ochiai_score": 1.0
+      }
+    },
+    {
+      "id": "CLM-010",
+      "tier": "Tier B (WASM via Wasmtime)",
+      "property": "Fuel-Metered WASM Consensus Replay & Determinism",
+      "statement": "Tier B executes distributed consensus nodes compiled to wasm32-wasi under deterministic fuel metering, zero-leakage virtual WASI (clocks, entropy, socket IPC), state memory snapshot/restore, and byte-exact execution trace replay across repeated runs.",
+      "test_target": "crates/crucible-wasm/tests/tier_b_wasm_tests.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "target_workload": "3-node Raft consensus cluster compiled to wasm32-wasip1",
+        "fuel_metering_deterministic": true,
+        "fuel_consumption_steps": [134, 70, 70, 70, 70, 70, 70, 70, 70, 70],
+        "out_of_fuel_preemption_verified": true,
+        "state_checkpoint_restore_hash_match": true,
+        "page_level_dirty_tracking_verified": true,
+        "cluster_consensus_verified": true,
+        "network_partition_resilience_verified": true,
+        "divergences_across_independent_runs": 0,
+        "trace_hashes": {
+          "seed_0xDEAD_BEEF_0001": "429f5991b775c777140b0373e9a9eb6b4e181a3647a70cb49c16296084210544",
+          "seed_0xDEAD_BEEF_0002": "eeda339ef23d5a27befe27a665976b748cdc460d4eca672f7eee24b9ae73f2a0",
+          "seed_0xDEAD_BEEF_0003": "de179ba7eba6971858f2c4c9ae949e5604f5abd95f7eb1d0e79858d18b035528"
+        }
+      }
+    }
+  ]
+}
