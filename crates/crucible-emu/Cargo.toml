@@ -1,0 +1,17 @@
+[package]
+name = "crucible-emu"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+crucible-core = { path = "../crucible-core" }
+crucible-vkernel = { path = "../crucible-vkernel" }
+iced-x86.workspace = true
+object.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+serde.workspace = true
+bytes.workspace = true
