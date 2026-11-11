@@ -1,0 +1,18 @@
+[package]
+name = "crucible-sim"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+crucible-core = { path = "../crucible-core" }
+crucible-checkers = { path = "../crucible-checkers" }
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rand.workspace = true
+rand_chacha.workspace = true
+sha2.workspace = true
