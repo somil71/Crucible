@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crucible Web Explorer - Causal Timeline & Deterministic Trace Inspector</title>
+    <style>
+        :root {
+            --bg-base: #0d1117;
+            --bg-surface: #161b22;
+            --bg-elevated: #21262d;
+            --border: #30363d;
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+            --accent-green: #238636;
+            --accent-green-bright: #39d353;
+            --accent-blue: #58a6ff;
+            --accent-red: #f85149;
+            --accent-yellow: #d29922;
+            --accent-purple: #bc8cff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--accent-green-bright);
+        }
+
+        .badge {
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-tier { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); border: 1px solid rgba(88, 166, 255, 0.3); }
+        .badge-verified { background: rgba(57, 211, 83, 0.15); color: var(--accent-green-bright); border: 1px solid rgba(57, 211, 83, 0.3); }
+        .badge-divergent { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); border: 1px solid rgba(248, 81, 73, 0.3); }
+
+        .bundle-info {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .bundle-info span strong {
+            color: var(--text-main);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button {
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        button:hover {
+            background: #30363d;
+            border-color: #8b949e;
+        }
+
+        button.primary {
+            background: var(--accent-green);
+            border-color: #2ea043;
+            color: #ffffff;
+        }
+
+        button.primary:hover {
+            background: #2ea043;
+        }
+
+        .view-tabs {
+            display: flex;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s ease;
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .timeline-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #080c10;
+            position: relative;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .scrubber-bar {
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .scrubber-slider {
+            flex: 1;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-elevated);
+            outline: none;
+        }
+
+        .scrubber-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-green-bright);
+            cursor: pointer;
+            box-shadow: 0 0 6px rgba(57, 211, 83, 0.6);
+        }
+
+        .scrubber-stats {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            min-width: 140px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .inspector-panel {
+            width: 380px;
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .state-card {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .state-card h3 {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .key-val-grid {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 6px 12px;
+            font-size: 0.82rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .key-val-grid .key {
+            color: var(--text-muted);
+        }
+
+        .key-val-grid .val {
+            color: var(--text-main);
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .register-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 10px;
+            font-family: monospace;
+            font-size: 0.78rem;
+        }
+
+        .register-item {
+            display: flex;
+            justify-content: space-between;
+            background: var(--bg-elevated);
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
+        .reg-name { color: var(--accent-blue); font-weight: 600; }
+        .reg-val { color: var(--text-main); }
+        .reg-diff { background: rgba(248, 81, 73, 0.25); border: 1px solid var(--accent-red); }
+
+        .diff-view-container {
+            display: none;
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .diff-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .diff-column {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .diff-column h2 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .divergence-alert {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid var(--accent-red);
+            border-radius: 6px;
+            padding: 12px 16px;
+            color: #ff7b72;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .merkle-view-container {
+            display: none;
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .merkle-node {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .merkle-root {
+            border-color: var(--accent-green-bright);
+            background: rgba(57, 211, 83, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <h1>CRUCIBLE</h1>
+            <span class="badge badge-tier" id="tier-badge">Tier A / C</span>
+            <span class="badge badge-verified" id="status-badge">REPLAY VERIFIED</span>
+        </div>
+
+        <div class="bundle-info">
+            <span>Target: <strong id="info-target">ToyRaft / Musl Redis</strong></span>
+            <span>Seed: <strong id="info-seed">0xDEAD_BEEF_CAFE_0042</strong></span>
+            <span>Events: <strong id="info-events">1,000,000</strong></span>
+            <span>FPS: <strong id="info-fps" style="color:var(--accent-green-bright)">60 FPS</strong></span>
+        </div>
+
+        <div class="controls">
+            <button id="btn-play-pause">▶ Play</button>
+            <button id="btn-prev-step">◀ Step</button>
+            <button id="btn-next-step">Step ▶</button>
+            <button id="btn-reset">Reset</button>
+            <button class="primary" id="btn-load-sample">Load Live Bundle</button>
+        </div>
+    </header>
+
+    <div class="view-tabs">
+        <div class="tab active" data-view="timeline">Causal Timeline & Sequence</div>
+        <div class="tab" data-view="diff">Differential Bisect Diff Viewer</div>
+        <div class="tab" data-view="merkle">Merkle Transparency Log</div>
+    </div>
+
+    <main>
+        <!-- Tab 1: Timeline & Sequence -->
+        <div class="timeline-container" id="timeline-view">
+            <div class="canvas-wrapper">
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <div class="scrubber-bar">
+                <input type="range" class="scrubber-slider" id="scrubber" min="0" max="1000" value="0">
+                <div class="scrubber-stats" id="scrubber-stats">Step 0 / 1,000</div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Diff Viewer -->
+        <div class="diff-view-container" id="diff-view">
+            <div class="divergence-alert">
+                ⚠️ Divergence Isolated: Step 342 in Node 1. Cause: Single-Bit Register Bitflip in R12 (Bit 7, delta 0x80).
+            </div>
+            <div class="diff-split">
+                <div class="diff-column">
+                    <h2 style="color:var(--accent-green-bright)">Baseline Execution (Passing)</h2>
+                    <div class="key-val-grid">
+                        <span class="key">Step:</span><span class="val">342</span>
+                        <span class="key">RIP:</span><span class="val">0x00000000004018e2</span>
+                        <span class="key">Mnemonic:</span><span class="val">cmp r12, rbx</span>
+                        <span class="key">R12:</span><span class="val">0x0000000000000000</span>
+                        <span class="key">RFLAGS:</span><span class="val">0x0000000000000246 (ZF=1)</span>
+                        <span class="key">Action:</span><span class="val">Commit Quorum Achieved</span>
+                    </div>
+                </div>
+
+                <div class="diff-column">
+                    <h2 style="color:var(--accent-red)">Divergent Execution (Corrupted)</h2>
+                    <div class="key-val-grid">
+                        <span class="key">Step:</span><span class="val">342</span>
+                        <span class="key">RIP:</span><span class="val">0x00000000004018e2</span>
+                        <span class="key">Mnemonic:</span><span class="val">cmp r12, rbx</span>
+                        <span class="key">R12:</span><span class="val" style="color:var(--accent-red); font-weight:bold;">0x0000000000000080</span>
+                        <span class="key">RFLAGS:</span><span class="val" style="color:var(--accent-red); font-weight:bold;">0x0000000000000202 (ZF=0)</span>
+                        <span class="key">Action:</span><span class="val" style="color:var(--accent-red);">Premature Timeout Dispatched</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Merkle Transparency Log -->
+        <div class="merkle-view-container" id="merkle-view">
+            <div class="merkle-node merkle-root">
+                <h3>Merkle Root (RFC 6962 Domain Attested)</h3>
+                <p id="merkle-root-display">e9c38b25a858901c91d27e554e75b84fd2c01b23aaeb2538800985cca7259533</p>
+                <p style="color:var(--accent-green-bright); margin-top:5px; font-size:0.8rem;">Signed by Ed25519 Public Key: 429f5991b775c777140b0373e9a9eb6b4e181a3647a70cb49c16296084210544</p>
+            </div>
+            <div id="merkle-audit-nodes"></div>
+        </div>
+
+        <!-- Right Side: Step Inspector Panel -->
+        <aside class="inspector-panel" id="inspector-panel">
+            <div class="panel-header">
+                <span>Step Inspector</span>
+                <span id="current-step-badge" style="color:var(--accent-blue)">Step 0</span>
+            </div>
+
+            <div class="panel-body">
+                <div class="state-card">
+                    <h3>Discrete Event</h3>
+                    <div class="key-val-grid">
+                        <span class="key">V-Time:</span><span class="val" id="insp-vtime">0 ns (0.000 ms)</span>
+                        <span class="key">Node ID:</span><span class="val" id="insp-node">Node 1</span>
+                        <span class="key">Thread:</span><span class="val" id="insp-thread">TID 1</span>
+                        <span class="key">Kind:</span><span class="val" id="insp-kind">InstructionStep</span>
+                        <span class="key">Summary:</span><span class="val" id="insp-summary">Init stack frame</span>
+                    </div>
+                </div>
+
+                <div class="state-card">
+                    <h3>CPU Registers (x86-64 / WASM)</h3>
+                    <div class="register-grid" id="register-grid">
+                        <div class="register-item"><span class="reg-name">RAX</span><span class="reg-val" id="reg-rax">0x00000000</span></div>
+                        <div class="register-item"><span class="reg-name">RBX</span><span class="reg-val" id="reg-rbx">0x00000000</span></div>
+                        <div class="register-item"><span class="reg-name">RCX</span><span class="reg-val" id="reg-rcx">0x00000000</span></div>
+                        <div class="register-item"><span class="reg-name">RDX</span><span class="reg-val" id="reg-rdx">0x00000000</span></div>
+                        <div class="register-item"><span class="reg-name">RSI</span><span class="reg-val" id="reg-rsi">0x7ffffff0</span></div>
+                        <div class="register-item"><span class="reg-name">RDI</span><span class="reg-val" id="reg-rdi">0x00400000</span></div>
+                        <div class="register-item"><span class="reg-name">RSP</span><span class="reg-val" id="reg-rsp">0x7ffffff0</span></div>
+                        <div class="register-item"><span class="reg-name">RBP</span><span class="reg-val" id="reg-rbp">0x7ffffff0</span></div>
+                        <div class="register-item"><span class="reg-name">R8</span><span class="reg-val" id="reg-r8">0x00000000</span></div>
+                        <div class="register-item"><span class="reg-name">R12</span><span class="reg-val" id="reg-r12">0x00000000</span></div>
+                        <div class="register-item"><span class="reg-name">RIP</span><span class="reg-val" id="reg-rip">0x00400000</span></div>
+                        <div class="register-item"><span class="reg-name">RFLAGS</span><span class="reg-val" id="reg-rflags">0x00000202</span></div>
+                    </div>
+                </div>
+
+                <div class="state-card">
+                    <h3>Causal State Digest</h3>
+                    <div class="key-val-grid">
+                        <span class="key">Leaf Hash:</span><span class="val" id="insp-leaf-hash" style="font-size:0.75rem;">3e8fcd633c8e874a...</span>
+                        <span class="key">CoW Pages:</span><span class="val" id="insp-pages">14 pages (56 KB)</span>
+                        <span class="key">Cluster:</span><span class="val" id="insp-cluster">Term 2 (Leader=N1)</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // High-Performance Level-of-Detail Canvas Timeline Scrubber
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scrubber = document.getElementById('scrubber');
+        const scrubberStats = document.getElementById('scrubber-stats');
+        const currentStepBadge = document.getElementById('current-step-badge');
+
+        let totalEvents = 1000000; // Capable of scrubbing 1,000,000 events
+        let currentStep = 0;
+        let isPlaying = false;
+        let playInterval = null;
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+
+        // Trace event model generator for 1M event virtual simulation
+        const nodes = ["Node 1 (Leader)", "Node 2 (Follower)", "Node 3 (Follower)", "Node 4 (Follower)"];
+        const eventKinds = ["InstructionStep", "PacketSend", "PacketRecv", "StateCheckpoint", "FaultInjected"];
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            drawTimeline();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        scrubber.max = totalEvents - 1;
+        scrubber.addEventListener('input', (e) => {
+            currentStep = parseInt(e.target.value);
+            updateInspector();
+            drawTimeline();
+        });
+
+        function updateInspector() {
+            scrubberStats.innerText = `Step ${currentStep.toLocaleString()} / ${totalEvents.toLocaleString()}`;
+            currentStepBadge.innerText = `Step ${currentStep.toLocaleString()}`;
+
+            const vtimeNanos = currentStep * 1000;
+            const vtimeMs = (vtimeNanos / 1000000).toFixed(3);
+            document.getElementById('insp-vtime').innerText = `${vtimeNanos.toLocaleString()} ns (${vtimeMs} ms)`;
+            
+            const nodeIdx = currentStep % 4;
+            document.getElementById('insp-node').innerText = nodes[nodeIdx];
+            document.getElementById('insp-thread').innerText = `TID ${(currentStep % 8) + 1}`;
+            
+            const kind = eventKinds[currentStep % eventKinds.length];
+            document.getElementById('insp-kind').innerText = kind;
+            document.getElementById('insp-summary').innerText = `Executed step ${currentStep}: state transition`;
+
+            // Deterministic synthetic registers
+            const stepHex = currentStep.toString(16).padStart(8, '0');
+            document.getElementById('reg-rax').innerText = `0x0000${stepHex}`;
+            document.getElementById('reg-rip').innerText = `0x0040${((currentStep * 4) % 0xffff).toString(16).padStart(4, '0')}`;
+            document.getElementById('reg-r12').innerText = currentStep === 342 ? "0x00000080" : "0x00000000";
+            
+            const r12Elem = document.getElementById('reg-r12').parentElement;
+            if (currentStep === 342) {
+                r12Elem.classList.add('reg-diff');
+            } else {
+                r12Elem.classList.remove('reg-diff');
+            }
+        }
+
+        function drawTimeline() {
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.fillStyle = '#080c10';
+            ctx.fillRect(0, 0, width, height);
+
+            const laneCount = 4;
+            const laneHeight = height / laneCount;
+
+            // Draw Node Lanes
+            for (let i = 0; i < laneCount; i++) {
+                ctx.strokeStyle = '#21262d';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, i * laneHeight);
+                ctx.lineTo(width, i * laneHeight);
+                ctx.stroke();
+
+                ctx.fillStyle = '#484f58';
+                ctx.font = '11px sans-serif';
+                ctx.fillText(nodes[i], 12, i * laneHeight + 20);
+            }
+
+            // Draw Events using Level of Detail (LOD) aggregation
+            // When scrubbing across 1M events, bucket into screen pixel columns for fluid 60 FPS
+            const bucketSize = Math.max(1, Math.floor(totalEvents / width));
+            const viewStart = Math.max(0, currentStep - Math.floor(width / 2) * bucketSize);
+
+            ctx.fillStyle = '#238636';
+            for (let x = 0; x < width; x += 3) {
+                const stepIdx = viewStart + x * bucketSize;
+                if (stepIdx >= totalEvents) break;
+
+                const nodeIdx = stepIdx % laneCount;
+                const y = nodeIdx * laneHeight + laneHeight / 2;
+
+                // Color code by event kind
+                const kindIdx = stepIdx % eventKinds.length;
+                if (kindIdx === 4) ctx.fillStyle = '#f85149'; // Fault
+                else if (kindIdx === 1 || kindIdx === 2) ctx.fillStyle = '#58a6ff'; // Network
+                else ctx.fillStyle = '#39d353'; // Step
+
+                ctx.fillRect(x, y - 4, 2, 8);
+            }
+
+            // Scrubber Needle
+            const needleX = width / 2;
+            ctx.strokeStyle = '#f85149';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(needleX, 0);
+            ctx.lineTo(needleX, height);
+            ctx.stroke();
+
+            // Scrubber head diamond
+            ctx.fillStyle = '#f85149';
+            ctx.beginPath();
+            ctx.moveTo(needleX, 0);
+            ctx.lineTo(needleX + 6, 8);
+            ctx.lineTo(needleX, 16);
+            ctx.lineTo(needleX - 6, 8);
+            ctx.fill();
+
+            // FPS counter calculation
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFrameTime >= 1000) {
+                fps = Math.round((frameCount * 1000) / (now - lastFrameTime));
+                document.getElementById('info-fps').innerText = `${fps} FPS`;
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+        }
+
+        // Play/Pause Loop
+        document.getElementById('btn-play-pause').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            document.getElementById('btn-play-pause').innerText = isPlaying ? "⏸ Pause" : "▶ Play";
+            if (isPlaying) {
+                playInterval = setInterval(() => {
+                    currentStep = (currentStep + 1000) % totalEvents;
+                    scrubber.value = currentStep;
+                    updateInspector();
+                    requestAnimationFrame(drawTimeline);
+                }, 16); // 60 FPS interval
+            } else {
+                clearInterval(playInterval);
+            }
+        });
+
+        document.getElementById('btn-next-step').addEventListener('click', () => {
+            currentStep = Math.min(totalEvents - 1, currentStep + 1);
+            scrubber.value = currentStep;
+            updateInspector();
+            drawTimeline();
+        });
+
+        document.getElementById('btn-prev-step').addEventListener('click', () => {
+            currentStep = Math.max(0, currentStep - 1);
+            scrubber.value = currentStep;
+            updateInspector();
+            drawTimeline();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            currentStep = 0;
+            scrubber.value = 0;
+            updateInspector();
+            drawTimeline();
+        });
+
+        // Tab Navigation
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                const view = tab.getAttribute('data-view');
+                document.getElementById('timeline-view').style.display = view === 'timeline' ? 'flex' : 'none';
+                document.getElementById('diff-view').style.display = view === 'diff' ? 'flex' : 'none';
+                document.getElementById('merkle-view').style.display = view === 'merkle' ? 'flex' : 'none';
+
+                if (view === 'timeline') {
+                    resizeCanvas();
+                }
+            });
+        });
+
+        // Populate sample Merkle proof list
+        const auditContainer = document.getElementById('merkle-audit-nodes');
+        for (let i = 0; i < 5; i++) {
+            const div = document.createElement('div');
+            div.className = 'merkle-node';
+            div.innerHTML = `<strong>Inclusion Proof Hop ${i + 1}</strong> (Direction: ${i % 2 === 0 ? 'Right' : 'Left'})<br>Sibling Hash: <code>${(i * 123456789012345).toString(16).padEnd(64, 'a')}</code>`;
+            auditContainer.appendChild(div);
+        }
+
+        // Initialize
+        resizeCanvas();
+        updateInspector();
+    </script>
+</body>
+</html>

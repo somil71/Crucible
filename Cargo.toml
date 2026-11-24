@@ -9,6 +9,7 @@ members = [
     "crates/crucible-cli",
     "crates/crucible-sim",
     "crates/crucible-wasm",
+    "crates/crucible-web",
 ]
 
 [workspace.package]

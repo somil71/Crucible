@@ -1,0 +1,18 @@
+[package]
+name = "crucible-web"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+crucible-core = { path = "../crucible-core" }
+crucible-trace = { path = "../crucible-trace" }
+crucible-emu = { path = "../crucible-emu" }
+crucible-sim = { path = "../crucible-sim" }
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true

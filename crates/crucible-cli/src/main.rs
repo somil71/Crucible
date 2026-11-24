@@ -54,6 +54,14 @@ enum Commands {
         #[command(subcommand)]
         action: BundleAction,
     },
+    /// Launch the interactive Web Explorer visualizer (Phase 8)
+    Explore {
+        #[arg(short, long)]
+        bundle: Option<PathBuf>,
+
+        #[arg(short, long, default_value = "8080")]
+        port: u16,
+    },
 }
 
 #[derive(Subcommand)]
@@ -272,6 +280,18 @@ async fn main() -> anyhow::Result<()> {
                 println!("Signature:        {}", bundle_data.signature_hex());
             }
         },
+        Commands::Explore { bundle, port } => {
+            let loaded_bundle = if let Some(path) = bundle {
+                info!("Loading evidence bundle from {path:?}");
+                Some(EvidenceBundle::load_from_file(&path)?)
+            } else {
+                None
+            };
+            println!("Starting Crucible Web Explorer on http://127.0.0.1:{port}");
+            println!("View interactive causal timeline, differential bisection diffs, and Merkle tree.");
+            let server = crucible_web::WebExplorerServer::new(loaded_bundle, port);
+            server.start().await?;
+        }
     }
 
     Ok(())
