@@ -1,5 +1,7 @@
 //! Crucible Virtual Kernel - User-space implementation of Linux syscalls and deterministic resources.
 
+pub mod tier_d;
+
 use crucible_core::{ThreadId, VirtualTime};
 use std::collections::{HashMap, VecDeque};
 use thiserror::Error;
@@ -54,6 +56,7 @@ pub mod sys_nr {
     pub const EXIT: usize = 60;
     pub const FCNTL: usize = 72;
     pub const READLINK: usize = 89;
+    pub const GETTIMEOFDAY: usize = 96;
     pub const SIGALTSTACK: usize = 131;
     pub const PRCTL: usize = 157;
     pub const ARCH_PRCTL: usize = 158;
@@ -415,11 +418,27 @@ impl Default for VirtualKernelContext {
 }
 
 impl VirtualKernelContext {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn alloc_fd(&mut self, desc: FileDescriptor) -> i32 {
         let fd = self.next_fd;
         self.next_fd += 1;
         self.fds.insert(fd, desc);
         fd
+    }
+
+    pub fn alloc_socket(&mut self, domain: i32, sock_type: i32, protocol: i32) -> i32 {
+        self.alloc_fd(FileDescriptor::Socket {
+            domain,
+            sock_type,
+            protocol,
+            state: SocketState::Unbound,
+            non_blocking: false,
+            reuse_addr: false,
+            tcp_nodelay: false,
+        })
     }
 
     pub fn alloc_epoll(&mut self) -> i32 {

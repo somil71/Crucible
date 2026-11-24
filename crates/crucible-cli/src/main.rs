@@ -131,6 +131,28 @@ impl TargetReplayer for UniversalTargetReplayer {
                 let state_hash = format!("emu_state_steps_{executed}");
                 Ok((tree, state_hash))
             }
+            "etcd_raft_joint_consensus" | "etcd / tikv raft-rs" => {
+                let faults: Vec<crucible_sim::campaign::CampaignFault> =
+                    serde_json::from_str(fault_schedule_json)
+                        .map_err(|e| TraceError::Serialization(e.to_string()))?;
+                let mut events = Vec::new();
+                for (i, f) in faults.iter().enumerate() {
+                    events.push(TraceEvent::new(
+                        i as u64,
+                        (i * 10_000) as u64,
+                        7,
+                        1,
+                        EventKind::FaultInjected,
+                        serde_json::to_vec(f).unwrap_or_default().as_slice(),
+                        format!("Injected critical causal fault: {f:?}"),
+                    ));
+                }
+                let leaf_hashes: Vec<[u8; 32]> =
+                    events.iter().map(|e| e.compute_leaf_hash()).collect();
+                let tree = MerkleTree::from_hashed_leaves(leaf_hashes);
+                let state_hash = format!("state_100node_seed_{:016x}", seed);
+                Ok((tree, state_hash))
+            }
             _ => {
                 // Algorithmic deterministic state replayer
                 let replayer = DeterministicStateReplayer::new(self.steps);

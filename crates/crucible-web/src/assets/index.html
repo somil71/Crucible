@@ -692,6 +692,31 @@
         // Initialize
         resizeCanvas();
         updateInspector();
+
+        // Server-Sent Events (SSE) Live Campaign Streaming
+        try {
+            const sse = new EventSource('/api/stream');
+            sse.onopen = () => {
+                const liveBadge = document.querySelector('.badge-live');
+                if (liveBadge) {
+                    liveBadge.style.display = 'inline-block';
+                    liveBadge.innerText = '● LIVE SSE';
+                }
+            };
+            sse.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'event' || data.event_id !== undefined) {
+                        totalEvents++;
+                        scrubber.max = totalEvents;
+                        document.getElementById('stat-events').innerText = totalEvents.toLocaleString();
+                        requestAnimationFrame(drawTimeline);
+                    }
+                } catch (_) {}
+            };
+        } catch (err) {
+            console.log("SSE streaming running in static bundle mode");
+        }
     </script>
 </body>
 </html>
