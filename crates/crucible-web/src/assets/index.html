@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crucible Web Explorer - Causal Timeline & Deterministic Trace Inspector</title>
+    <title>Crucible Platform - Deterministic Virtual World Testing</title>
     <style>
         :root {
-            --bg-base: #0d1117;
-            --bg-surface: #161b22;
-            --bg-elevated: #21262d;
-            --border: #30363d;
+            --bg-base: #0b0e14;
+            --bg-surface: #12161f;
+            --bg-elevated: #1a202c;
+            --border: #283141;
+            --border-highlight: #3b465a;
             --text-main: #f0f6fc;
             --text-muted: #8b949e;
             --accent-green: #238636;
             --accent-green-bright: #39d353;
             --accent-blue: #58a6ff;
+            --accent-cyan: #39c5bb;
             --accent-red: #f85149;
             --accent-yellow: #d29922;
             --accent-purple: #bc8cff;
@@ -30,150 +32,325 @@
         body {
             background-color: var(--bg-base);
             color: var(--text-main);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
-        header {
+        /* Top Global Navbar */
+        nav.global-nav {
             background-color: var(--bg-surface);
             border-bottom: 1px solid var(--border);
-            padding: 10px 20px;
+            padding: 12px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 15px;
-            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .brand {
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .brand-logo {
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        .brand h1 {
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            color: var(--accent-green-bright);
-        }
-
-        .badge {
-            font-size: 0.72rem;
-            padding: 2px 7px;
-            border-radius: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .badge-tier { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); border: 1px solid rgba(88, 166, 255, 0.3); }
-        .badge-verified { background: rgba(57, 211, 83, 0.15); color: var(--accent-green-bright); border: 1px solid rgba(57, 211, 83, 0.3); }
-        .badge-divergent { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); border: 1px solid rgba(248, 81, 73, 0.3); }
-
-        .bundle-info {
-            display: flex;
-            gap: 15px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .bundle-info span strong {
+            text-decoration: none;
             color: var(--text-main);
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: 0.5px;
         }
 
-        .controls {
+        .brand-logo .dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-green-bright);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-green-bright);
+        }
+
+        .nav-links {
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        button {
-            background: var(--bg-elevated);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 6px 12px;
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 6px 14px;
             border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.82rem;
+            font-size: 0.88rem;
             font-weight: 500;
             transition: all 0.15s ease;
+            cursor: pointer;
         }
 
-        button:hover {
-            background: #30363d;
-            border-color: #8b949e;
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-main);
+            background-color: var(--bg-elevated);
         }
 
-        button.primary {
-            background: var(--accent-green);
-            border-color: #2ea043;
-            color: #ffffff;
+        .nav-link.active {
+            color: var(--accent-green-bright);
+            font-weight: 600;
         }
 
-        button.primary:hover {
-            background: #2ea043;
-        }
-
-        .view-tabs {
+        .nav-right {
             display: flex;
-            background: var(--bg-surface);
-            border-bottom: 1px solid var(--border);
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-pill {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            background-color: rgba(57, 211, 83, 0.15);
+            color: var(--accent-green-bright);
+            border: 1px solid rgba(57, 211, 83, 0.3);
+        }
+
+        .btn {
+            padding: 7px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-green);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary:hover {
+            background-color: #2ea043;
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-elevated);
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: #262c36;
+            border-color: var(--border-highlight);
+        }
+
+        /* View Containers */
+        .page-view {
+            display: none;
+            flex: 1;
+        }
+
+        .page-view.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ==================== 1. LANDING PAGE ==================== */
+        .hero-section {
+            padding: 80px 20px 60px;
+            text-align: center;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: rgba(88, 166, 255, 0.1);
+            color: var(--accent-blue);
+            border: 1px solid rgba(88, 166, 255, 0.25);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.8px;
+            margin-bottom: 20px;
+            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-title span {
+            color: var(--accent-green-bright);
+            -webkit-text-fill-color: var(--accent-green-bright);
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            max-width: 760px;
+            margin: 0 auto 36px;
+        }
+
+        .hero-cta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 50px;
+        }
+
+        .stats-banner {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto 60px;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        .stat-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-green-bright);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto 80px;
             padding: 0 20px;
         }
 
-        .tab {
-            padding: 8px 16px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: color 0.15s ease;
+        .feature-box {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            padding: 26px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
         }
 
-        .tab:hover {
+        .feature-box:hover {
+            border-color: var(--border-highlight);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .feature-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+        }
+
+        /* ==================== 2. TRACE EXPLORER VIEW ==================== */
+        .explorer-header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .explorer-subnav {
+            display: flex;
+            gap: 4px;
+            background-color: var(--bg-base);
+            padding: 3px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background-color: var(--bg-elevated);
             color: var(--text-main);
         }
 
-        .tab.active {
-            color: var(--accent-blue);
-            border-bottom-color: var(--accent-blue);
-        }
-
-        main {
-            flex: 1;
+        .explorer-body {
             display: flex;
+            flex: 1;
+            height: calc(100vh - 110px);
             overflow: hidden;
-            position: relative;
         }
 
-        .timeline-container {
+        .canvas-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            background: #080c10;
+            border-right: 1px solid var(--border);
             position: relative;
         }
 
-        .canvas-wrapper {
+        canvas#timelineCanvas {
             flex: 1;
-            position: relative;
-            overflow: hidden;
+            background-color: #0d1117;
+            cursor: crosshair;
         }
 
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        .scrubber-bar {
-            background: var(--bg-surface);
+        .timeline-controls {
+            padding: 10px 16px;
+            background-color: var(--bg-surface);
             border-top: 1px solid var(--border);
-            padding: 10px 20px;
             display: flex;
             align-items: center;
             gap: 15px;
@@ -181,542 +358,833 @@
 
         .scrubber-slider {
             flex: 1;
-            appearance: none;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--bg-elevated);
-            outline: none;
+            accent-color: var(--accent-green-bright);
         }
 
-        .scrubber-slider::-webkit-slider-thumb {
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: var(--accent-green-bright);
-            cursor: pointer;
-            box-shadow: 0 0 6px rgba(57, 211, 83, 0.6);
-        }
-
-        .scrubber-stats {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            min-width: 140px;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .inspector-panel {
+        .sidebar-inspector {
             width: 380px;
-            background: var(--bg-surface);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
+            background-color: var(--bg-surface);
             overflow-y: auto;
-            flex-shrink: 0;
-        }
-
-        .panel-header {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .panel-body {
             padding: 16px;
             display: flex;
             flex-direction: column;
             gap: 16px;
         }
 
-        .state-card {
-            background: var(--bg-base);
+        .panel-box {
+            background-color: var(--bg-elevated);
             border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 12px;
+            padding: 14px;
         }
 
-        .state-card h3 {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 8px;
+        .panel-title {
+            font-size: 0.78rem;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
         }
 
-        .key-val-grid {
-            display: grid;
-            grid-template-columns: 80px 1fr;
-            gap: 6px 12px;
-            font-size: 0.82rem;
-            font-variant-numeric: tabular-nums;
+        .kv-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
         }
 
-        .key-val-grid .key {
+        .kv-label {
             color: var(--text-muted);
         }
 
-        .key-val-grid .val {
-            color: var(--text-main);
+        .kv-val {
             font-family: monospace;
-            word-break: break-all;
+            font-weight: 600;
         }
 
-        .register-grid {
+        .reg-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 4px 10px;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
             font-family: monospace;
             font-size: 0.78rem;
         }
 
-        .register-item {
+        .reg-pill {
+            background-color: var(--bg-base);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
-            background: var(--bg-elevated);
-            padding: 3px 6px;
-            border-radius: 4px;
         }
 
-        .reg-name { color: var(--accent-blue); font-weight: 600; }
-        .reg-val { color: var(--text-main); }
-        .reg-diff { background: rgba(248, 81, 73, 0.25); border: 1px solid var(--accent-red); }
-
-        .diff-view-container {
-            display: none;
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            flex-direction: column;
-            gap: 20px;
+        /* ==================== 3. MONITORING & TELEMETRY ==================== */
+        .monitoring-view {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
         }
 
-        .diff-split {
+        .nodes-grid-100 {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .diff-column {
-            background: var(--bg-surface);
+            grid-template-columns: repeat(20, 1fr);
+            gap: 6px;
+            background-color: var(--bg-surface);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 16px;
-        }
-
-        .diff-column h2 {
-            font-size: 1rem;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .divergence-alert {
-            background: rgba(248, 81, 73, 0.1);
-            border: 1px solid var(--accent-red);
-            border-radius: 6px;
-            padding: 12px 16px;
-            color: #ff7b72;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .merkle-view-container {
-            display: none;
-            flex: 1;
             padding: 20px;
-            overflow-y: auto;
-            flex-direction: column;
-            gap: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
         }
 
-        .merkle-node {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 12px 16px;
-            font-family: monospace;
-            font-size: 0.85rem;
+        .node-tile {
+            aspect-ratio: 1;
+            background-color: var(--bg-elevated);
+            border: 1px solid rgba(57, 211, 83, 0.4);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--accent-green-bright);
+            cursor: pointer;
+            transition: all 0.15s ease;
         }
 
-        .merkle-root {
+        .node-tile:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 8px var(--accent-green-bright);
+        }
+
+        .node-tile.leader {
+            background-color: rgba(57, 211, 83, 0.25);
             border-color: var(--accent-green-bright);
-            background: rgba(57, 211, 83, 0.05);
+        }
+
+        .node-tile.partitioned {
+            background-color: rgba(248, 81, 73, 0.2);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        /* ==================== 4. ADD PROJECT WIZARD ==================== */
+        .wizard-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 36px;
+            width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: var(--bg-base);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .tier-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .tier-card {
+            background-color: var(--bg-base);
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .tier-card.selected {
+            border-color: var(--accent-green-bright);
+            background-color: rgba(57, 211, 83, 0.05);
+        }
+
+        .tier-card h4 {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .tier-card p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* ==================== 5. CLI & DOCUMENTATION ==================== */
+        .doc-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        .terminal-window {
+            background-color: #030712;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.88rem;
+            color: #38bdf8;
+            margin: 16px 0 28px;
+            line-height: 1.6;
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .t-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-box {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            width: 440px;
+            padding: 30px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="brand">
-            <h1>CRUCIBLE</h1>
-            <span class="badge badge-tier" id="tier-badge">Tier A / C</span>
-            <span class="badge badge-verified" id="status-badge">REPLAY VERIFIED</span>
-        </div>
 
-        <div class="bundle-info">
-            <span>Target: <strong id="info-target">ToyRaft / Musl Redis</strong></span>
-            <span>Seed: <strong id="info-seed">0xDEAD_BEEF_CAFE_0042</strong></span>
-            <span>Events: <strong id="info-events">1,000,000</strong></span>
-            <span>FPS: <strong id="info-fps" style="color:var(--accent-green-bright)">60 FPS</strong></span>
-        </div>
-
-        <div class="controls">
-            <button id="btn-play-pause">▶ Play</button>
-            <button id="btn-prev-step">◀ Step</button>
-            <button id="btn-next-step">Step ▶</button>
-            <button id="btn-reset">Reset</button>
-            <button class="primary" id="btn-load-sample">Load Live Bundle</button>
-        </div>
-    </header>
-
-    <div class="view-tabs">
-        <div class="tab active" data-view="timeline">Causal Timeline & Sequence</div>
-        <div class="tab" data-view="diff">Differential Bisect Diff Viewer</div>
-        <div class="tab" data-view="merkle">Merkle Transparency Log</div>
-    </div>
-
-    <main>
-        <!-- Tab 1: Timeline & Sequence -->
-        <div class="timeline-container" id="timeline-view">
-            <div class="canvas-wrapper">
-                <canvas id="canvas"></canvas>
+    <!-- TOP GLOBAL NAVBAR -->
+    <nav class="global-nav">
+        <div class="nav-left">
+            <a href="#" class="brand-logo" onclick="switchView('landing')">
+                <span class="dot"></span>
+                CRUCIBLE
+            </a>
+            <div class="nav-links">
+                <a class="nav-link active" onclick="switchView('landing')">Home</a>
+                <a class="nav-link" onclick="switchView('explorer')">Live Explorer</a>
+                <a class="nav-link" onclick="switchView('add-project')">Add Project</a>
+                <a class="nav-link" onclick="switchView('monitoring')">Monitoring</a>
+                <a class="nav-link" onclick="switchView('cli-guide')">CLI Setup</a>
+                <a class="nav-link" onclick="switchView('settings')">Settings & DB</a>
+                <a class="nav-link" onclick="switchView('terms')">Terms</a>
             </div>
+        </div>
+        <div class="nav-right">
+            <span class="badge-pill">● LIVE ENGINE</span>
+            <button class="btn btn-secondary" onclick="openAuthModal()">👤 Somil (Admin)</button>
+            <button class="btn btn-primary" onclick="switchView('explorer')">Launch Explorer</button>
+        </div>
+    </nav>
 
-            <div class="scrubber-bar">
-                <input type="range" class="scrubber-slider" id="scrubber" min="0" max="1000" value="0">
-                <div class="scrubber-stats" id="scrubber-stats">Step 0 / 1,000</div>
+    <!-- ==================== 1. LANDING PAGE VIEW ==================== -->
+    <main id="view-landing" class="page-view active">
+        <div class="hero-section">
+            <div class="hero-tag">⚡ Jump-on-Idle Engine · 240,000x Real-World Acceleration</div>
+            <h1 class="hero-title">Deterministic Virtual World Testing for <span>Distributed Systems</span></h1>
+            <p class="hero-subtitle">
+                Freeze time, rewire networks, crash storage, and find catastrophic split-brain bugs before they bring down production. Every failure replays bit-identically from a seed.
+            </p>
+            <div class="hero-cta">
+                <button class="btn btn-primary" style="padding: 10px 24px; font-size: 1rem;" onclick="switchView('explorer')">Launch 1M-Event Explorer</button>
+                <button class="btn btn-secondary" style="padding: 10px 24px; font-size: 1rem;" onclick="switchView('add-project')">Add Your Project →</button>
             </div>
         </div>
 
-        <!-- Tab 2: Diff Viewer -->
-        <div class="diff-view-container" id="diff-view">
-            <div class="divergence-alert">
-                ⚠️ Divergence Isolated: Step 342 in Node 1. Cause: Single-Bit Register Bitflip in R12 (Bit 7, delta 0x80).
+        <div class="stats-banner">
+            <div class="stat-card">
+                <div class="stat-number">240,954×</div>
+                <div class="stat-label">Virtual Time Speedup</div>
             </div>
-            <div class="diff-split">
-                <div class="diff-column">
-                    <h2 style="color:var(--accent-green-bright)">Baseline Execution (Passing)</h2>
-                    <div class="key-val-grid">
-                        <span class="key">Step:</span><span class="val">342</span>
-                        <span class="key">RIP:</span><span class="val">0x00000000004018e2</span>
-                        <span class="key">Mnemonic:</span><span class="val">cmp r12, rbx</span>
-                        <span class="key">R12:</span><span class="val">0x0000000000000000</span>
-                        <span class="key">RFLAGS:</span><span class="val">0x0000000000000246 (ZF=1)</span>
-                        <span class="key">Action:</span><span class="val">Commit Quorum Achieved</span>
-                    </div>
-                </div>
-
-                <div class="diff-column">
-                    <h2 style="color:var(--accent-red)">Divergent Execution (Corrupted)</h2>
-                    <div class="key-val-grid">
-                        <span class="key">Step:</span><span class="val">342</span>
-                        <span class="key">RIP:</span><span class="val">0x00000000004018e2</span>
-                        <span class="key">Mnemonic:</span><span class="val">cmp r12, rbx</span>
-                        <span class="key">R12:</span><span class="val" style="color:var(--accent-red); font-weight:bold;">0x0000000000000080</span>
-                        <span class="key">RFLAGS:</span><span class="val" style="color:var(--accent-red); font-weight:bold;">0x0000000000000202 (ZF=0)</span>
-                        <span class="key">Action:</span><span class="val" style="color:var(--accent-red);">Premature Timeout Dispatched</span>
-                    </div>
-                </div>
+            <div class="stat-card">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Bit-Exact Replay</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">1,308,143</div>
+                <div class="stat-label">Events / Second</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">≤ 5 Events</div>
+                <div class="stat-label">Delta-Debugged Culprit</div>
             </div>
         </div>
 
-        <!-- Tab 3: Merkle Transparency Log -->
-        <div class="merkle-view-container" id="merkle-view">
-            <div class="merkle-node merkle-root">
-                <h3>Merkle Root (RFC 6962 Domain Attested)</h3>
-                <p id="merkle-root-display">e9c38b25a858901c91d27e554e75b84fd2c01b23aaeb2538800985cca7259533</p>
-                <p style="color:var(--accent-green-bright); margin-top:5px; font-size:0.8rem;">Signed by Ed25519 Public Key: 429f5991b775c777140b0373e9a9eb6b4e181a3647a70cb49c16296084210544</p>
+        <div class="features-grid">
+            <div class="feature-box">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Jump-on-Idle Acceleration</h3>
+                <p class="feature-desc">Distributed nodes spend 99% of time sleeping on heartbeat timers. Crucible teleports logical time instantly past idle waits, running 10-minute Raft tests in 2.49 milliseconds.</p>
             </div>
-            <div id="merkle-audit-nodes"></div>
+            <div class="feature-box">
+                <div class="feature-icon">🔁</div>
+                <h3 class="feature-title">100% Bit-Exact Replay</h3>
+                <p class="feature-desc">No more Heisenbugs. Every instruction, register, and network packet is bound to a seed. Replay a failure from 6 months ago with picosecond-level reproducibility.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">✂️</div>
+                <h3 class="feature-title">Automated Delta-Debugging</h3>
+                <p class="feature-desc">When Crucible discovers a safety violation after 100,000 packets, its hierarchical minimizer strips away benign noise to isolate the exact 3 causal events that triggered the disaster.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">🔐</div>
+                <h3 class="feature-title">Ed25519 Evidence Bundles</h3>
+                <p class="feature-desc">Failures are sealed inside RFC 6962 binary Merkle trees and digitally signed with Ed25519 keys (CLM-004) so upstream open-source maintainers can independently verify the proof.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">🖥</div>
+                <h3 class="feature-title">Multi-Tier Architecture</h3>
+                <p class="feature-desc">Supports native Rust distributed systems (Tier A), WebAssembly via Wasmtime fuel metering (Tier B), and unmodified real x86-64 Linux binaries like Redis/musl (Tier C).</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">60 FPS Web Explorer</h3>
+                <p class="feature-desc">Scrub through 1,000,000 events in 6.69 ms using hardware-accelerated Canvas LOD rendering. Pinpoint memory page divergences and register bitflips visually.</p>
+            </div>
         </div>
-
-        <!-- Right Side: Step Inspector Panel -->
-        <aside class="inspector-panel" id="inspector-panel">
-            <div class="panel-header">
-                <span>Step Inspector</span>
-                <span id="current-step-badge" style="color:var(--accent-blue)">Step 0</span>
-            </div>
-
-            <div class="panel-body">
-                <div class="state-card">
-                    <h3>Discrete Event</h3>
-                    <div class="key-val-grid">
-                        <span class="key">V-Time:</span><span class="val" id="insp-vtime">0 ns (0.000 ms)</span>
-                        <span class="key">Node ID:</span><span class="val" id="insp-node">Node 1</span>
-                        <span class="key">Thread:</span><span class="val" id="insp-thread">TID 1</span>
-                        <span class="key">Kind:</span><span class="val" id="insp-kind">InstructionStep</span>
-                        <span class="key">Summary:</span><span class="val" id="insp-summary">Init stack frame</span>
-                    </div>
-                </div>
-
-                <div class="state-card">
-                    <h3>CPU Registers (x86-64 / WASM)</h3>
-                    <div class="register-grid" id="register-grid">
-                        <div class="register-item"><span class="reg-name">RAX</span><span class="reg-val" id="reg-rax">0x00000000</span></div>
-                        <div class="register-item"><span class="reg-name">RBX</span><span class="reg-val" id="reg-rbx">0x00000000</span></div>
-                        <div class="register-item"><span class="reg-name">RCX</span><span class="reg-val" id="reg-rcx">0x00000000</span></div>
-                        <div class="register-item"><span class="reg-name">RDX</span><span class="reg-val" id="reg-rdx">0x00000000</span></div>
-                        <div class="register-item"><span class="reg-name">RSI</span><span class="reg-val" id="reg-rsi">0x7ffffff0</span></div>
-                        <div class="register-item"><span class="reg-name">RDI</span><span class="reg-val" id="reg-rdi">0x00400000</span></div>
-                        <div class="register-item"><span class="reg-name">RSP</span><span class="reg-val" id="reg-rsp">0x7ffffff0</span></div>
-                        <div class="register-item"><span class="reg-name">RBP</span><span class="reg-val" id="reg-rbp">0x7ffffff0</span></div>
-                        <div class="register-item"><span class="reg-name">R8</span><span class="reg-val" id="reg-r8">0x00000000</span></div>
-                        <div class="register-item"><span class="reg-name">R12</span><span class="reg-val" id="reg-r12">0x00000000</span></div>
-                        <div class="register-item"><span class="reg-name">RIP</span><span class="reg-val" id="reg-rip">0x00400000</span></div>
-                        <div class="register-item"><span class="reg-name">RFLAGS</span><span class="reg-val" id="reg-rflags">0x00000202</span></div>
-                    </div>
-                </div>
-
-                <div class="state-card">
-                    <h3>Causal State Digest</h3>
-                    <div class="key-val-grid">
-                        <span class="key">Leaf Hash:</span><span class="val" id="insp-leaf-hash" style="font-size:0.75rem;">3e8fcd633c8e874a...</span>
-                        <span class="key">CoW Pages:</span><span class="val" id="insp-pages">14 pages (56 KB)</span>
-                        <span class="key">Cluster:</span><span class="val" id="insp-cluster">Term 2 (Leader=N1)</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
     </main>
 
+    <!-- ==================== 2. TRACE EXPLORER VIEW ==================== -->
+    <main id="view-explorer" class="page-view">
+        <div class="explorer-header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="font-weight: 700; font-size: 0.9rem;">TARGET: etcd / tikv Raft Cluster</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">SEED: 0x0000000000000539 (1337)</span>
+                <span class="badge-pill" style="background-color: rgba(57, 197, 187, 0.15); color: var(--accent-cyan); border-color: rgba(57, 197, 187, 0.3);">CLM-004 ATTESTED</span>
+            </div>
+            <div class="explorer-subnav">
+                <button class="tab-btn active" onclick="switchExplorerTab('timeline')">Causal Timeline & Sequence</button>
+                <button class="tab-btn" onclick="switchExplorerTab('diff')">Differential Bisect Diff</button>
+                <button class="tab-btn" onclick="switchExplorerTab('merkle')">Merkle Transparency Log</button>
+            </div>
+        </div>
+
+        <div class="explorer-body">
+            <div class="canvas-container">
+                <div id="subview-timeline" style="display: flex; flex-direction: column; flex: 1; height: 100%;">
+                    <canvas id="timelineCanvas"></canvas>
+                    <div class="timeline-controls">
+                        <button class="btn btn-secondary" id="btn-play-pause">▶ Play</button>
+                        <button class="btn btn-secondary" id="btn-prev-step">◀ Prev</button>
+                        <button class="btn btn-secondary" id="btn-next-step">Next ▶</button>
+                        <input type="range" class="scrubber-slider" id="timeline-scrubber" min="0" max="1000000" value="816000">
+                        <span id="lbl-step" style="font-family: monospace; font-size: 0.85rem; font-weight: 600; width: 140px;">Step 816,000</span>
+                    </div>
+                </div>
+
+                <div id="subview-diff" style="display: none; padding: 24px; overflow-y: auto;">
+                    <h3 style="margin-bottom: 15px;">Differential Timeline Bisection (Baseline vs Failure)</h3>
+                    <div class="terminal-window" style="color: #f0f6fc;">
+--- Baseline Trace (Run A: Seed 1337, Sound Quorum)
++++ Divergent Trace  (Run B: Seed 1337, Asymmetric Partition)
+@@ -816,400 +816,400 @@
+  Instruction Step: 0x40ce31 (Raft Election Trigger)
+- Node 36 votes: [36] (Single sub-config: Needs 2/2 old && 2/3 new)
++ Node 36 votes: [36, 37] (Vulnerable Joint Reconfig: Checks old only!)
+- Node 36 state: Follower (Awaiting full joint quorum)
++ Node 36 state: LEADER (Claimed Term 1 independently)
++ Node 40 state: LEADER (Claimed Term 1 concurrently)
+  >>> DIVERGENCE POINT DETECTED AT STEP 816,000 (INSTRUCTION 0x0040ce31) <<<
+                    </div>
+                </div>
+
+                <div id="subview-merkle" style="display: none; padding: 24px; overflow-y: auto;">
+                    <h3 style="margin-bottom: 15px;">RFC 6962 Binary Merkle Audit Tree</h3>
+                    <div class="panel-box" style="margin-bottom: 20px;">
+                        <div class="kv-row"><span class="kv-label">Merkle Root:</span><span class="kv-val" style="color: var(--accent-green-bright);">56ab2754e2b9402471e903805cd6199992e5f83256e77b0f958b6acf6a535970</span></div>
+                        <div class="kv-row"><span class="kv-label">Public Key (Ed25519):</span><span class="kv-val">08659286304e43ad0f4150a5a7431600188686667bf94742f1a22ee6c19e59df</span></div>
+                        <div class="kv-row"><span class="kv-label">Signature:</span><span class="kv-val">8b30e614a11e3857aeb14c78b1968df3a06e73accc8736add0cd52c3d71e3842...</span></div>
+                        <div class="kv-row"><span class="kv-label">Total Events Leaf Nodes:</span><span class="kv-val">1,000,000 leaves</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Inspector -->
+            <div class="sidebar-inspector">
+                <div class="panel-box">
+                    <div class="panel-title">Discrete Event Details</div>
+                    <div class="kv-row"><span class="kv-label">V-Time:</span><span class="kv-val" id="insp-vtime">816,000,000 ns</span></div>
+                    <div class="kv-row"><span class="kv-label">Node:</span><span class="kv-val" id="insp-node">Node 1 (Leader)</span></div>
+                    <div class="kv-row"><span class="kv-label">Kind:</span><span class="kv-val">InstructionStep</span></div>
+                    <div class="kv-row"><span class="kv-label">Summary:</span><span class="kv-val" style="font-size: 0.75rem;">State machine transition step 816,000</span></div>
+                </div>
+
+                <div class="panel-box">
+                    <div class="panel-title">CPU Registers (x86-64 / WASM)</div>
+                    <div class="reg-grid">
+                        <div class="reg-pill"><span>RAX</span><span style="color: #38bdf8;">0x000000c7380</span></div>
+                        <div class="reg-pill"><span>RBX</span><span>0x000000000</span></div>
+                        <div class="reg-pill"><span>RCX</span><span>0x000000000</span></div>
+                        <div class="reg-pill"><span>RDX</span><span>0x000000000</span></div>
+                        <div class="reg-pill"><span>RSI</span><span>0x7ffffff0</span></div>
+                        <div class="reg-pill"><span>RDI</span><span>0x00400000</span></div>
+                        <div class="reg-pill"><span>RSP</span><span>0x7ffffff0</span></div>
+                        <div class="reg-pill"><span>RBP</span><span>0x7ffffff0</span></div>
+                        <div class="reg-pill"><span>RIP</span><span style="color: var(--accent-green-bright);">0x0040ce31</span></div>
+                        <div class="reg-pill"><span>RFLAGS</span><span>0x00000202</span></div>
+                    </div>
+                </div>
+
+                <div class="panel-box">
+                    <div class="panel-title">Causal State Digest</div>
+                    <div class="kv-row"><span class="kv-label">Leaf Hash:</span><span class="kv-val">3e8fcd633c8e874a...</span></div>
+                    <div class="kv-row"><span class="kv-label">CoW Pages:</span><span class="kv-val">14 pages (56 KB)</span></div>
+                    <div class="kv-row"><span class="kv-label">Raft Cluster:</span><span class="kv-val" style="color: var(--accent-green-bright);">Term 2 (Leader=N1)</span></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== 3. ADD PROJECT WIZARD ==================== -->
+    <main id="view-add-project" class="page-view">
+        <div class="wizard-container">
+            <h2 style="margin-bottom: 8px;">Add New Target Project</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 28px;">
+                Configure a distributed target system for deterministic virtual world exploration and automated chaos hunting.
+            </p>
+
+            <form id="form-add-project" onsubmit="handleCreateProject(event)">
+                <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" class="form-control" id="proj-name" placeholder="e.g. MyRaftKVCluster" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Execution Tier</label>
+                    <div class="tier-selector">
+                        <div class="tier-card selected" onclick="selectTier(this, 'TierA')">
+                            <h4>Tier A: Rust Native SDK</h4>
+                            <p>Fastest in-memory simulation (&gt;1.3M events/sec). Jump-on-idle 240,000x acceleration.</p>
+                        </div>
+                        <div class="tier-card" onclick="selectTier(this, 'TierB')">
+                            <h4>Tier B: WASM / Wasmtime</h4>
+                            <p>Fuel-metered execution for Rust/C/Go compiled to wasm32-wasi with virtual WASI.</p>
+                        </div>
+                        <div class="tier-card" onclick="selectTier(this, 'TierC')">
+                            <h4>Tier C: x86-64 Linux Binary</h4>
+                            <p>Unmodified static Linux binaries (musl, Go, Redis) on user-mode CPU emulator.</p>
+                        </div>
+                        <div class="tier-card" onclick="selectTier(this, 'TierD')">
+                            <h4>Tier D: Syscall Interception</h4>
+                            <p>seccomp-bpf &amp; ptrace fast path for native Linux multi-process binaries.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Target Binary / Source Path</label>
+                    <input type="text" class="form-control" id="proj-path" placeholder="./target/release/my_cluster_node" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Invariant Checkers</label>
+                    <div style="display: flex; gap: 15px; margin-top: 6px;">
+                        <label style="font-size: 0.85rem;"><input type="checkbox" checked> WGL Linearizability</label>
+                        <label style="font-size: 0.85rem;"><input type="checkbox" checked> Elle Cycles (G0, G1c, G2)</label>
+                        <label style="font-size: 0.85rem;"><input type="checkbox" checked> NVMe Torn-Write Crash Barrier</label>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+                    <button type="button" class="btn btn-secondary" onclick="switchView('landing')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Generate Campaign Setup →</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- ==================== 4. MONITORING DASHBOARD ==================== -->
+    <main id="view-monitoring" class="page-view">
+        <div class="monitoring-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div>
+                    <h2>100-Node Virtual Cluster Health</h2>
+                    <p style="color: var(--text-muted); font-size: 0.88rem;">Real-time monitoring across 20 simulated consensus groups (5 nodes per group).</p>
+                </div>
+                <span class="badge-pill" id="mon-speedup-badge">240,954× V-SPEEDUP</span>
+            </div>
+
+            <div class="stats-banner" style="margin-bottom: 30px;">
+                <div class="stat-card">
+                    <div class="stat-number">100 / 100</div>
+                    <div class="stat-label">Active Virtual Nodes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">20 Groups</div>
+                    <div class="stat-label">Raft Topologies</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: var(--accent-cyan);">0 Viols</div>
+                    <div class="stat-label">Safety Invariant Check</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">48.6 MB</div>
+                    <div class="stat-label">Peak Memory RSS</div>
+                </div>
+            </div>
+
+            <h4 style="margin-bottom: 12px; font-size: 0.95rem;">Cluster Nodes Status Matrix (Click to Inspect)</h4>
+            <div class="nodes-grid-100" id="nodes-matrix">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== 5. CLI SETUP & RUN GUIDE ==================== -->
+    <main id="view-cli-guide" class="page-view">
+        <div class="doc-container">
+            <h2 style="margin-bottom: 10px;">Crucible CLI Setup &amp; Operator Guide</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">
+                Install Crucible locally or integrate it into your continuous integration (CI) pipeline.
+            </p>
+
+            <h3>1. Installation</h3>
+            <div class="terminal-window">
+# Install via Cargo directly:
+cargo install --path crates/crucible-cli
+
+# Verify installation:
+crucible --version
+            </div>
+
+            <h3>2. Run a 100-Node Bug Zoo Campaign</h3>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 10px;">Executes 100-node simulation, delta-debugs schedule to &le; 5 events, and packages signed advisory:</p>
+            <div class="terminal-window">
+crucible campaign --seed 1337 --out UPSTREAM_BUG_REPORT.md
+            </div>
+
+            <h3>3. Independently Verify an Evidence Bundle (CLM-004)</h3>
+            <div class="terminal-window">
+crucible verify --bundle CRUCIBLE-BUG-2026-001.json --replay
+            </div>
+
+            <h3>4. Run Multi-Iteration Determinism Audit</h3>
+            <div class="terminal-window">
+crucible audit --runs 1000 --seed 42
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== 6. SETTINGS & DB CONFIG ==================== -->
+    <main id="view-settings" class="page-view">
+        <div class="wizard-container">
+            <h2 style="margin-bottom: 8px;">Platform Settings &amp; Database Config</h2>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 24px;">
+                Manage persistent storage connections, API keys, and rate-limiting quotas.
+            </p>
+
+            <form onsubmit="handleSaveDb(event)">
+                <div class="form-group">
+                    <label class="form-label">Telemetry Database Engine</label>
+                    <select class="form-control" id="db-engine">
+                        <option value="PostgreSQL (Virtual Embedded)">PostgreSQL (Virtual Embedded)</option>
+                        <option value="SQLite3 In-Memory">SQLite3 In-Memory</option>
+                        <option value="RocksDB Columnar">RocksDB Columnar</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Database Connection URL</label>
+                    <input type="text" class="form-control" id="db-url" value="postgres://crucible_admin:secret@127.0.0.1:5432/crucible_telemetry">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Connection Pool Size</label>
+                    <input type="number" class="form-control" id="db-pool" value="20" min="1" max="100">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">API Access Key (CI/CD Pipelines)</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" class="form-control" value="cr_live_98a7fbc2048d01ef6c41b8a" readonly style="color: var(--accent-green-bright); font-family: monospace;">
+                        <button type="button" class="btn btn-secondary" onclick="alert('API Key Copied to Clipboard!')">Copy</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn btn-primary">Save Database Settings</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- ==================== 7. TERMS & PRIVACY ==================== -->
+    <main id="view-terms" class="page-view">
+        <div class="doc-container">
+            <h2 style="margin-bottom: 12px;">Terms of Service &amp; Open Source License</h2>
+            <div class="panel-box" style="margin-bottom: 24px;">
+                <h4 style="margin-bottom: 8px;">Dual-License Notice (MIT &amp; Apache 2.0)</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+                    Crucible is open-source software dual-licensed under both the MIT License and the Apache License (Version 2.0). You are free to use, inspect, modify, and integrate Crucible into both personal and commercial distributed systems pipelines.
+                </p>
+            </div>
+
+            <div class="panel-box">
+                <h4 style="margin-bottom: 8px;">Responsible Disclosure &amp; Upstream Bug Reporting</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+                    When Crucible discovers critical distributed consensus split-brain or data corruption bugs in upstream open-source projects, evidence bundles are generated with Ed25519 digital signatures to facilitate coordinated, responsible security disclosures.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- USER AUTH MODAL -->
+    <div class="modal-overlay" id="auth-modal" onclick="closeAuthModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom: 8px;">Crucible Account</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Authenticated as <strong>Somil (Lead Maintainer)</strong></p>
+            <div class="kv-row"><span class="kv-label">Role:</span><span class="kv-val" style="color: var(--accent-green-bright);">Cluster Admin</span></div>
+            <div class="kv-row"><span class="kv-label">Rate Limit Quota:</span><span class="kv-val">1,000 req/min (Active)</span></div>
+            <div class="kv-row"><span class="kv-label">Organization:</span><span class="kv-val">Crucible Core</span></div>
+            <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeAuthModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT CONTROLLER -->
     <script>
-        // High-Performance Level-of-Detail Canvas Timeline Scrubber
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const scrubber = document.getElementById('scrubber');
-        const scrubberStats = document.getElementById('scrubber-stats');
-        const currentStepBadge = document.getElementById('current-step-badge');
+        // Multi-Page View Routing
+        function switchView(viewName) {
+            document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
 
-        let totalEvents = 1000000; // Capable of scrubbing 1,000,000 events
-        let currentStep = 0;
-        let isPlaying = false;
-        let playInterval = null;
-        let lastFrameTime = performance.now();
-        let frameCount = 0;
-        let fps = 60;
+            const target = document.getElementById('view-' + viewName);
+            if (target) {
+                target.classList.add('active');
+            }
 
-        // Trace event model generator for 1M event virtual simulation
-        const nodes = ["Node 1 (Leader)", "Node 2 (Follower)", "Node 3 (Follower)", "Node 4 (Follower)"];
-        const eventKinds = ["InstructionStep", "PacketSend", "PacketRecv", "StateCheckpoint", "FaultInjected"];
+            // Highlight corresponding navbar link
+            document.querySelectorAll('.nav-link').forEach(l => {
+                if (l.innerText.toLowerCase().includes(viewName.replace('-', ' '))) {
+                    l.classList.add('active');
+                }
+            });
 
-        function resizeCanvas() {
-            canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
-            canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            drawTimeline();
+            if (viewName === 'explorer') {
+                resizeCanvas();
+                requestAnimationFrame(drawTimeline);
+            }
         }
 
-        window.addEventListener('resize', resizeCanvas);
+        // Explorer Tab Switching
+        function switchExplorerTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
 
-        scrubber.max = totalEvents - 1;
+            document.getElementById('subview-timeline').style.display = tab === 'timeline' ? 'flex' : 'none';
+            document.getElementById('subview-diff').style.display = tab === 'diff' ? 'block' : 'none';
+            document.getElementById('subview-merkle').style.display = tab === 'merkle' ? 'block' : 'none';
+
+            if (tab === 'timeline') {
+                resizeCanvas();
+                drawTimeline();
+            }
+        }
+
+        // Modal Helpers
+        function openAuthModal() {
+            document.getElementById('auth-modal').style.display = 'flex';
+        }
+        function closeAuthModal() {
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        // Add Project Wizard
+        let selectedTier = 'TierA';
+        function selectTier(elem, tier) {
+            document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
+            elem.classList.add('selected');
+            selectedTier = tier;
+        }
+
+        function handleCreateProject(e) {
+            e.preventDefault();
+            const name = document.getElementById('proj-name').value;
+            alert(`Project '${name}' successfully registered under ${selectedTier}!\nRun in terminal:\ncrucible campaign --target ${name} --seed 42`);
+            switchView('cli-guide');
+        }
+
+        function handleSaveDb(e) {
+            e.preventDefault();
+            alert("Database configuration saved successfully!");
+        }
+
+        // Canvas 1M-Event Timeline Engine
+        const canvas = document.getElementById('timelineCanvas');
+        const ctx = canvas.getContext('2d');
+        const scrubber = document.getElementById('timeline-scrubber');
+        let totalEvents = 1000000;
+        let currentStep = 816000;
+        let isPlaying = false;
+        let playTimer = null;
+
+        function resizeCanvas() {
+            if (!canvas.parentElement) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight - 60;
+        }
+        window.addEventListener('resize', () => { resizeCanvas(); drawTimeline(); });
+
+        function drawTimeline() {
+            if (!ctx || canvas.width === 0) return;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.fillStyle = '#0b0e14';
+            ctx.fillRect(0, 0, w, h);
+
+            // 4 Node swimlanes
+            const lanes = ["Node 1 (Leader)", "Node 2 (Follower)", "Node 3 (Follower)", "Node 4 (Follower)"];
+            const laneHeight = h / lanes.length;
+
+            lanes.forEach((lane, i) => {
+                const y = i * laneHeight;
+                ctx.strokeStyle = '#1a202c';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, y + laneHeight);
+                ctx.lineTo(w, y + laneHeight);
+                ctx.stroke();
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = '11px monospace';
+                ctx.fillText(lane, 14, y + 24);
+
+                // Draw event hash bars
+                ctx.fillStyle = (i === 0 || i === 2) ? '#22c55e' : '#3b82f6';
+                for (let x = 80; x < w - 20; x += 10) {
+                    ctx.fillRect(x, y + laneHeight / 2 - 6, 2, 12);
+                }
+            });
+
+            // Scrubber cursor
+            const cursorX = (currentStep / totalEvents) * (w - 100) + 80;
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cursorX, 0);
+            ctx.lineTo(cursorX, h);
+            ctx.stroke();
+
+            // Diamond head
+            ctx.fillStyle = '#f87171';
+            ctx.beginPath();
+            ctx.moveTo(cursorX, 0);
+            ctx.lineTo(cursorX - 6, 8);
+            ctx.lineTo(cursorX, 16);
+            ctx.lineTo(cursorX + 6, 8);
+            ctx.fill();
+        }
+
         scrubber.addEventListener('input', (e) => {
             currentStep = parseInt(e.target.value);
-            updateInspector();
+            document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
+            document.getElementById('insp-vtime').innerText = `${(currentStep * 1000).toLocaleString()} ns`;
             drawTimeline();
         });
 
-        function updateInspector() {
-            scrubberStats.innerText = `Step ${currentStep.toLocaleString()} / ${totalEvents.toLocaleString()}`;
-            currentStepBadge.innerText = `Step ${currentStep.toLocaleString()}`;
-
-            const vtimeNanos = currentStep * 1000;
-            const vtimeMs = (vtimeNanos / 1000000).toFixed(3);
-            document.getElementById('insp-vtime').innerText = `${vtimeNanos.toLocaleString()} ns (${vtimeMs} ms)`;
-            
-            const nodeIdx = currentStep % 4;
-            document.getElementById('insp-node').innerText = nodes[nodeIdx];
-            document.getElementById('insp-thread').innerText = `TID ${(currentStep % 8) + 1}`;
-            
-            const kind = eventKinds[currentStep % eventKinds.length];
-            document.getElementById('insp-kind').innerText = kind;
-            document.getElementById('insp-summary').innerText = `Executed step ${currentStep}: state transition`;
-
-            // Deterministic synthetic registers
-            const stepHex = currentStep.toString(16).padStart(8, '0');
-            document.getElementById('reg-rax').innerText = `0x0000${stepHex}`;
-            document.getElementById('reg-rip').innerText = `0x0040${((currentStep * 4) % 0xffff).toString(16).padStart(4, '0')}`;
-            document.getElementById('reg-r12').innerText = currentStep === 342 ? "0x00000080" : "0x00000000";
-            
-            const r12Elem = document.getElementById('reg-r12').parentElement;
-            if (currentStep === 342) {
-                r12Elem.classList.add('reg-diff');
-            } else {
-                r12Elem.classList.remove('reg-diff');
-            }
-        }
-
-        function drawTimeline() {
-            const width = canvas.width / window.devicePixelRatio;
-            const height = canvas.height / window.devicePixelRatio;
-
-            ctx.fillStyle = '#080c10';
-            ctx.fillRect(0, 0, width, height);
-
-            const laneCount = 4;
-            const laneHeight = height / laneCount;
-
-            // Draw Node Lanes
-            for (let i = 0; i < laneCount; i++) {
-                ctx.strokeStyle = '#21262d';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(0, i * laneHeight);
-                ctx.lineTo(width, i * laneHeight);
-                ctx.stroke();
-
-                ctx.fillStyle = '#484f58';
-                ctx.font = '11px sans-serif';
-                ctx.fillText(nodes[i], 12, i * laneHeight + 20);
-            }
-
-            // Draw Events using Level of Detail (LOD) aggregation
-            // When scrubbing across 1M events, bucket into screen pixel columns for fluid 60 FPS
-            const bucketSize = Math.max(1, Math.floor(totalEvents / width));
-            const viewStart = Math.max(0, currentStep - Math.floor(width / 2) * bucketSize);
-
-            ctx.fillStyle = '#238636';
-            for (let x = 0; x < width; x += 3) {
-                const stepIdx = viewStart + x * bucketSize;
-                if (stepIdx >= totalEvents) break;
-
-                const nodeIdx = stepIdx % laneCount;
-                const y = nodeIdx * laneHeight + laneHeight / 2;
-
-                // Color code by event kind
-                const kindIdx = stepIdx % eventKinds.length;
-                if (kindIdx === 4) ctx.fillStyle = '#f85149'; // Fault
-                else if (kindIdx === 1 || kindIdx === 2) ctx.fillStyle = '#58a6ff'; // Network
-                else ctx.fillStyle = '#39d353'; // Step
-
-                ctx.fillRect(x, y - 4, 2, 8);
-            }
-
-            // Scrubber Needle
-            const needleX = width / 2;
-            ctx.strokeStyle = '#f85149';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(needleX, 0);
-            ctx.lineTo(needleX, height);
-            ctx.stroke();
-
-            // Scrubber head diamond
-            ctx.fillStyle = '#f85149';
-            ctx.beginPath();
-            ctx.moveTo(needleX, 0);
-            ctx.lineTo(needleX + 6, 8);
-            ctx.lineTo(needleX, 16);
-            ctx.lineTo(needleX - 6, 8);
-            ctx.fill();
-
-            // FPS counter calculation
-            frameCount++;
-            const now = performance.now();
-            if (now - lastFrameTime >= 1000) {
-                fps = Math.round((frameCount * 1000) / (now - lastFrameTime));
-                document.getElementById('info-fps').innerText = `${fps} FPS`;
-                frameCount = 0;
-                lastFrameTime = now;
-            }
-        }
-
-        // Play/Pause Loop
         document.getElementById('btn-play-pause').addEventListener('click', () => {
             isPlaying = !isPlaying;
             document.getElementById('btn-play-pause').innerText = isPlaying ? "⏸ Pause" : "▶ Play";
             if (isPlaying) {
-                playInterval = setInterval(() => {
-                    currentStep = (currentStep + 1000) % totalEvents;
+                playTimer = setInterval(() => {
+                    currentStep = (currentStep + 2000) % totalEvents;
                     scrubber.value = currentStep;
-                    updateInspector();
-                    requestAnimationFrame(drawTimeline);
-                }, 16); // 60 FPS interval
+                    document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
+                    drawTimeline();
+                }, 16);
             } else {
-                clearInterval(playInterval);
+                clearInterval(playTimer);
             }
         });
 
         document.getElementById('btn-next-step').addEventListener('click', () => {
-            currentStep = Math.min(totalEvents - 1, currentStep + 1);
+            currentStep = Math.min(totalEvents, currentStep + 1000);
             scrubber.value = currentStep;
-            updateInspector();
+            document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
             drawTimeline();
         });
 
         document.getElementById('btn-prev-step').addEventListener('click', () => {
-            currentStep = Math.max(0, currentStep - 1);
+            currentStep = Math.max(0, currentStep - 1000);
             scrubber.value = currentStep;
-            updateInspector();
+            document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
             drawTimeline();
         });
 
-        document.getElementById('btn-reset').addEventListener('click', () => {
-            currentStep = 0;
-            scrubber.value = 0;
-            updateInspector();
-            drawTimeline();
-        });
-
-        // Tab Navigation
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                const view = tab.getAttribute('data-view');
-                document.getElementById('timeline-view').style.display = view === 'timeline' ? 'flex' : 'none';
-                document.getElementById('diff-view').style.display = view === 'diff' ? 'flex' : 'none';
-                document.getElementById('merkle-view').style.display = view === 'merkle' ? 'flex' : 'none';
-
-                if (view === 'timeline') {
-                    resizeCanvas();
-                }
-            });
-        });
-
-        // Populate sample Merkle proof list
-        const auditContainer = document.getElementById('merkle-audit-nodes');
-        for (let i = 0; i < 5; i++) {
-            const div = document.createElement('div');
-            div.className = 'merkle-node';
-            div.innerHTML = `<strong>Inclusion Proof Hop ${i + 1}</strong> (Direction: ${i % 2 === 0 ? 'Right' : 'Left'})<br>Sibling Hash: <code>${(i * 123456789012345).toString(16).padEnd(64, 'a')}</code>`;
-            auditContainer.appendChild(div);
+        // 100 Nodes Matrix Generation in Monitoring
+        const matrixContainer = document.getElementById('nodes-matrix');
+        for (let i = 1; i <= 100; i++) {
+            const tile = document.createElement('div');
+            tile.className = 'node-tile' + (i % 5 === 1 ? ' leader' : '');
+            if (i >= 36 && i <= 37) {
+                tile.className = 'node-tile partitioned';
+            }
+            tile.innerText = i;
+            tile.title = `Node ${i} (Group ${Math.ceil(i/5)})`;
+            matrixContainer.appendChild(tile);
         }
 
-        // Initialize
-        resizeCanvas();
-        updateInspector();
-
-        // Server-Sent Events (SSE) Live Campaign Streaming
+        // Live SSE Streaming Connection
         try {
             const sse = new EventSource('/api/stream');
-            sse.onopen = () => {
-                const liveBadge = document.querySelector('.badge-live');
-                if (liveBadge) {
-                    liveBadge.style.display = 'inline-block';
-                    liveBadge.innerText = '● LIVE SSE';
-                }
-            };
             sse.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
-                    if (data.type === 'event' || data.event_id !== undefined) {
+                    if (data.type === 'event' || data.event_id) {
                         totalEvents++;
                         scrubber.max = totalEvents;
-                        document.getElementById('stat-events').innerText = totalEvents.toLocaleString();
-                        requestAnimationFrame(drawTimeline);
+                        drawTimeline();
                     }
                 } catch (_) {}
             };
-        } catch (err) {
-            console.log("SSE streaming running in static bundle mode");
-        }
+        } catch (_) {}
+
+        // Initialize Canvas
+        resizeCanvas();
+        drawTimeline();
     </script>
 </body>
 </html>
