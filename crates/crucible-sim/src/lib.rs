@@ -1,5 +1,6 @@
 //! Crucible Sim - Tier A In-Memory Distributed Simulator and Search Engine.
 
+pub mod campaign;
 pub mod network;
 pub mod raft;
 pub mod raft_history;
@@ -7,6 +8,7 @@ pub mod search;
 pub mod storage;
 pub mod virtual_engine;
 
+pub use campaign::{CampaignFault, CampaignRunner, DiscoveredBug, LargeDistributedCluster};
 pub use network::{NetworkPacket, SimulatedNetwork};
 pub use raft::{ClusterConfig, LogEntry, RaftMessage, RaftNode, Role};
 pub use raft_history::{

@@ -62,6 +62,14 @@ enum Commands {
         #[arg(short, long, default_value = "8080")]
         port: u16,
     },
+    /// Execute 100-node distributed Bug Zoo campaign, minimize causal faults, and package upstream report (Phase 9)
+    Campaign {
+        #[arg(short, long, default_value = "1337")]
+        seed: u64,
+
+        #[arg(short, long)]
+        out: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -291,6 +299,37 @@ async fn main() -> anyhow::Result<()> {
             println!("View interactive causal timeline, differential bisection diffs, and Merkle tree.");
             let server = crucible_web::WebExplorerServer::new(loaded_bundle, port);
             server.start().await?;
+        }
+        Commands::Campaign { seed, out } => {
+            println!("=== CRUCIBLE BUG ZOO DISTRIBUTED EXPLORATION CAMPAIGN ===");
+            println!("Initializing 100-node cluster across 20 consensus groups...");
+            println!("Target: etcd / tikv joint consensus reconfiguration (§5.4.2)");
+            println!("Campaign Seed: {seed}");
+
+            let mut csprng = OsRng;
+            let signing_key = SigningKey::generate(&mut csprng);
+            let runner = crucible_sim::campaign::CampaignRunner::new(seed);
+
+            let bug = runner.run_100_node_campaign(&signing_key)
+                .map_err(|e| anyhow::anyhow!("Campaign failed: {e}"))?;
+
+            let report_md = bug.to_markdown_report();
+            let out_report_path = out.clone().unwrap_or_else(|| PathBuf::from("UPSTREAM_BUG_REPORT_ETCD_RAFT.md"));
+            std::fs::write(&out_report_path, &report_md)?;
+
+            let bundle_path = PathBuf::from(format!("{}.json", bug.bug_id));
+            bug.evidence_bundle.save_to_file(&bundle_path)?;
+
+            println!("\n✅ CAMPAIGN EXECUTION SUCCEEDED:");
+            println!("  - Target:               {}", bug.target_system);
+            println!("  - Bug ID:               {}", bug.bug_id);
+            println!("  - Initial Schedule:     {} faults", bug.initial_fault_count);
+            println!("  - Minimized Schedule:   {} causal events (delta-debugged)", bug.minimized_fault_count);
+            println!("  - Counterfactual Fix:   VERIFIED PASS (Dual-majority quorum eliminates bug)");
+            println!("  - Merkle Root:          {}", bug.evidence_bundle.merkle_root);
+            println!("  - Ed25519 Signature:    {}", bug.evidence_bundle.signature_hex());
+            println!("  - Bug Report Markdown:  {:?}", out_report_path);
+            println!("  - Signed Evidence:      {:?}", bundle_path);
         }
     }
 

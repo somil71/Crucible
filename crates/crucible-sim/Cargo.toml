@@ -8,6 +8,8 @@ license.workspace = true
 [dependencies]
 crucible-core = { path = "../crucible-core" }
 crucible-checkers = { path = "../crucible-checkers" }
+crucible-trace = { path = "../crucible-trace" }
+ed25519-dalek.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
