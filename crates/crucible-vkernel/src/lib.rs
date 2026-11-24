@@ -46,6 +46,10 @@ pub mod sys_nr {
     pub const RECVFROM: usize = 45;
     pub const BIND: usize = 49;
     pub const LISTEN: usize = 50;
+    pub const GETSOCKNAME: usize = 51;
+    pub const GETPEERNAME: usize = 52;
+    pub const SETSOCKOPT: usize = 54;
+    pub const GETSOCKOPT: usize = 55;
     pub const CLONE: usize = 56;
     pub const EXIT: usize = 60;
     pub const FCNTL: usize = 72;
@@ -56,13 +60,18 @@ pub mod sys_nr {
     pub const GETTID: usize = 186;
     pub const FUTEX: usize = 202;
     pub const SCHED_GETAFFINITY: usize = 204;
+    pub const EPOLL_CREATE: usize = 213;
     pub const SET_TID_ADDRESS: usize = 218;
     pub const CLOCK_GETTIME: usize = 228;
     pub const EXIT_GROUP: usize = 231;
+    pub const EPOLL_WAIT: usize = 232;
+    pub const EPOLL_CTL: usize = 233;
     pub const TGKILL: usize = 234;
     pub const OPENAT: usize = 257;
     pub const NEWFSTATAT: usize = 262;
     pub const READLINKAT: usize = 267;
+    pub const EPOLL_PWAIT: usize = 281;
+    pub const ACCEPT4: usize = 288;
     pub const EPOLL_CREATE1: usize = 291;
     pub const PIPE2: usize = 293;
     pub const PRLIMIT64: usize = 302;
@@ -82,9 +91,13 @@ pub enum SyscallCategory {
 pub fn classify_syscall(nr: usize) -> SyscallCategory {
     match nr {
         sys_nr::READ | sys_nr::WRITE | sys_nr::CLOSE | sys_nr::SOCKET
-        | sys_nr::BIND | sys_nr::LISTEN | sys_nr::ACCEPT | sys_nr::CONNECT
-        | sys_nr::FUTEX | sys_nr::EPOLL_CREATE1 | sys_nr::CLONE | sys_nr::EXIT
-        | sys_nr::EXIT_GROUP | sys_nr::MMAP | sys_nr::BRK | sys_nr::MPROTECT => {
+        | sys_nr::BIND | sys_nr::LISTEN | sys_nr::ACCEPT | sys_nr::ACCEPT4 | sys_nr::CONNECT
+        | sys_nr::SETSOCKOPT | sys_nr::GETSOCKOPT | sys_nr::GETSOCKNAME | sys_nr::GETPEERNAME
+        | sys_nr::SENDTO | sys_nr::RECVFROM
+        | sys_nr::FUTEX | sys_nr::EPOLL_CREATE | sys_nr::EPOLL_CREATE1
+        | sys_nr::EPOLL_CTL | sys_nr::EPOLL_WAIT | sys_nr::EPOLL_PWAIT
+        | sys_nr::CLONE | sys_nr::EXIT
+        | sys_nr::EXIT_GROUP | sys_nr::MMAP | sys_nr::MUNMAP | sys_nr::BRK | sys_nr::MPROTECT => {
             SyscallCategory::Stateful
         }
         sys_nr::CLOCK_GETTIME | sys_nr::GETRANDOM | sys_nr::GETPID | sys_nr::NANOSLEEP => {
@@ -114,10 +127,15 @@ pub fn syscall_name(nr: usize) -> &'static str {
         sys_nr::SOCKET => "sys_socket",
         sys_nr::CONNECT => "sys_connect",
         sys_nr::ACCEPT => "sys_accept",
+        sys_nr::ACCEPT4 => "sys_accept4",
         sys_nr::SENDTO => "sys_sendto",
         sys_nr::RECVFROM => "sys_recvfrom",
         sys_nr::BIND => "sys_bind",
         sys_nr::LISTEN => "sys_listen",
+        sys_nr::GETSOCKNAME => "sys_getsockname",
+        sys_nr::GETPEERNAME => "sys_getpeername",
+        sys_nr::SETSOCKOPT => "sys_setsockopt",
+        sys_nr::GETSOCKOPT => "sys_getsockopt",
         sys_nr::CLONE => "sys_clone",
         sys_nr::EXIT => "sys_exit",
         sys_nr::FCNTL => "sys_fcntl",
@@ -128,10 +146,14 @@ pub fn syscall_name(nr: usize) -> &'static str {
         sys_nr::GETTID => "sys_gettid",
         sys_nr::FUTEX => "sys_futex",
         sys_nr::SCHED_GETAFFINITY => "sys_sched_getaffinity",
+        sys_nr::EPOLL_CREATE => "sys_epoll_create",
         sys_nr::SET_TID_ADDRESS => "sys_set_tid_address",
         sys_nr::CLOCK_GETTIME => "sys_clock_gettime",
         sys_nr::EXIT_GROUP => "sys_exit_group",
+        sys_nr::EPOLL_WAIT => "sys_epoll_wait",
+        sys_nr::EPOLL_CTL => "sys_epoll_ctl",
         sys_nr::TGKILL => "sys_tgkill",
+        sys_nr::EPOLL_PWAIT => "sys_epoll_pwait",
         sys_nr::EPOLL_CREATE1 => "sys_epoll_create1",
         sys_nr::PIPE2 => "sys_pipe2",
         sys_nr::OPENAT => "sys_openat",
@@ -185,6 +207,97 @@ pub struct VirtualConnection {
     pub server_closed: bool,
 }
 
+/// Epoll event flags matching Linux sys/epoll.h
+pub mod epoll_const {
+    pub const EPOLLIN: u32 = 0x0001;
+    pub const EPOLLPRI: u32 = 0x0002;
+    pub const EPOLLOUT: u32 = 0x0004;
+    pub const EPOLLERR: u32 = 0x0008;
+    pub const EPOLLHUP: u32 = 0x0010;
+    pub const EPOLLRDHUP: u32 = 0x2000;
+    pub const EPOLLET: u32 = 1 << 31;
+    pub const EPOLLONESHOT: u32 = 1 << 30;
+
+    pub const EPOLL_CTL_ADD: i32 = 1;
+    pub const EPOLL_CTL_DEL: i32 = 2;
+    pub const EPOLL_CTL_MOD: i32 = 3;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EpollEvent {
+    pub events: u32,
+    pub data: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct EpollWatchEntry {
+    pub events: u32,
+    pub data: u64,
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct EpollInstance {
+    pub watched: HashMap<i32, EpollWatchEntry>,
+}
+
+impl EpollInstance {
+    pub fn poll_ready(&self, fds: &HashMap<i32, FileDescriptor>, network: &VirtualNetwork) -> Vec<EpollEvent> {
+        let mut ready = Vec::new();
+        let mut sorted_watched: Vec<_> = self.watched.iter().collect();
+        sorted_watched.sort_by_key(|(&fd, _)| fd);
+
+        for (&fd, entry) in sorted_watched {
+            let mut current_mask = 0u32;
+            match fds.get(&fd) {
+                Some(FileDescriptor::Socket { state, .. }) => {
+                    match state {
+                        SocketState::Listening { incoming_queue, .. } => {
+                            if !incoming_queue.is_empty() {
+                                current_mask |= epoll_const::EPOLLIN;
+                            }
+                        }
+                        SocketState::Connected { conn_id, .. } => {
+                            if let Some(conn) = network.connections.get(conn_id) {
+                                if !conn.c2s_buffer.is_empty() {
+                                    current_mask |= epoll_const::EPOLLIN;
+                                }
+                                if !conn.server_closed && !conn.client_closed {
+                                    current_mask |= epoll_const::EPOLLOUT;
+                                }
+                                if conn.server_closed || conn.client_closed {
+                                    current_mask |= epoll_const::EPOLLHUP | epoll_const::EPOLLIN;
+                                }
+                            } else {
+                                current_mask |= epoll_const::EPOLLERR;
+                            }
+                        }
+                        SocketState::Closed => {
+                            current_mask |= epoll_const::EPOLLHUP;
+                        }
+                        _ => {}
+                    }
+                }
+                Some(FileDescriptor::StandardInput) => {
+                    current_mask |= epoll_const::EPOLLIN;
+                }
+                Some(FileDescriptor::StandardOutput(_)) | Some(FileDescriptor::StandardError(_)) => {
+                    current_mask |= epoll_const::EPOLLOUT;
+                }
+                _ => {}
+            }
+
+            let matched = current_mask & (entry.events | epoll_const::EPOLLERR | epoll_const::EPOLLHUP);
+            if matched != 0 {
+                ready.push(EpollEvent {
+                    events: matched,
+                    data: entry.data,
+                });
+            }
+        }
+        ready
+    }
+}
+
 /// Virtual File Descriptor in a process table.
 #[derive(Debug)]
 pub enum FileDescriptor {
@@ -196,6 +309,12 @@ pub enum FileDescriptor {
         sock_type: i32,
         protocol: i32,
         state: SocketState,
+        non_blocking: bool,
+        reuse_addr: bool,
+        tcp_nodelay: bool,
+    },
+    Epoll {
+        instance_id: u64,
     },
 }
 
@@ -260,6 +379,8 @@ pub struct VirtualKernelContext {
     pub futexes: FutexRegistry,
     pub network: VirtualNetwork,
     pub fds: HashMap<i32, FileDescriptor>,
+    pub epoll_instances: HashMap<u64, EpollInstance>,
+    pub next_epoll_id: u64,
     pub next_fd: i32,
     pub brk_current: u64,
     pub mmap_next: u64,
@@ -280,6 +401,8 @@ impl Default for VirtualKernelContext {
             futexes: FutexRegistry::new(),
             network: VirtualNetwork::new(),
             fds,
+            epoll_instances: HashMap::new(),
+            next_epoll_id: 1,
             next_fd: 3,
             brk_current: 0x600000,
             mmap_next: 0x700000000000,
@@ -296,6 +419,13 @@ impl VirtualKernelContext {
         self.next_fd += 1;
         self.fds.insert(fd, desc);
         fd
+    }
+
+    pub fn alloc_epoll(&mut self) -> i32 {
+        let epoll_id = self.next_epoll_id;
+        self.next_epoll_id += 1;
+        self.epoll_instances.insert(epoll_id, EpollInstance::default());
+        self.alloc_fd(FileDescriptor::Epoll { instance_id: epoll_id })
     }
 
     pub fn deterministic_random_u64(&mut self) -> u64 {

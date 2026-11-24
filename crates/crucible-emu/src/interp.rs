@@ -4,7 +4,8 @@ use crate::cpu::{CpuRegisters, VirtualCpu};
 use crate::memory::VirtualMemory;
 use crucible_core::{CrucibleScheduler, SchedulingPolicy, Seed, SyncEvent, ThreadId};
 use crucible_vkernel::{
-    sys_nr, FileDescriptor, SocketAddrV4, SocketState, VirtualKernelContext,
+    epoll_const, sys_nr, EpollWatchEntry, FileDescriptor, SocketAddrV4, SocketState,
+    VirtualKernelContext,
 };
 use iced_x86::{Code, Decoder, DecoderOptions, Instruction, Mnemonic};
 
@@ -44,6 +45,7 @@ pub struct Emulator {
     pub vkernel: VirtualKernelContext,
     pub trace_log: Vec<ExecutionTraceEntry>,
     pub max_instructions: u64,
+    pub decode_cache: std::collections::HashMap<u64, Instruction>,
 }
 
 impl Emulator {
@@ -71,6 +73,7 @@ impl Emulator {
             vkernel: VirtualKernelContext::default(),
             trace_log: Vec::new(),
             max_instructions: 10_000_000,
+            decode_cache: std::collections::HashMap::new(),
         }
     }
 
@@ -122,25 +125,32 @@ impl Emulator {
             self.schedule_next_thread();
         }
 
-        // Fetch up to 15 bytes at RIP
+        // Fetch and decode instruction at RIP (using decode cache for speed)
         let rip = self.cpu.regs.rip;
         if rip == 0 {
             self.cpu.halted = true;
             return Ok(false);
         }
-        let mut bytes = [0u8; 15];
-        if !self.mem.read_bytes(rip, &mut bytes) {
-            let history: Vec<String> = self.trace_log.iter().rev().take(10).map(|e| format!("{:#x}: {:?}", e.rip, e.mnemonic)).collect();
-            return Err(format!("Instruction fetch fault at RIP {:#x}. History: {:?}", rip, history));
-        }
 
-        let mut decoder = Decoder::with_ip(64, &bytes, rip, DecoderOptions::NONE);
-        let mut instr = Instruction::default();
-        decoder.decode_out(&mut instr);
+        let instr = if let Some(&cached) = self.decode_cache.get(&rip) {
+            cached
+        } else {
+            let mut bytes = [0u8; 15];
+            if !self.mem.read_bytes(rip, &mut bytes) {
+                let history: Vec<String> = self.trace_log.iter().rev().take(10).map(|e| format!("{:#x}: {:?}", e.rip, e.mnemonic)).collect();
+                return Err(format!("Instruction fetch fault at RIP {:#x}. History: {:?}", rip, history));
+            }
 
-        if instr.is_invalid() {
-            return Err(format!("Invalid instruction at RIP {:#x}: {:02x?}", rip, &bytes[..4]));
-        }
+            let mut decoder = Decoder::with_ip(64, &bytes, rip, DecoderOptions::NONE);
+            let mut decoded = Instruction::default();
+            decoder.decode_out(&mut decoded);
+
+            if decoded.is_invalid() {
+                return Err(format!("Invalid instruction at RIP {:#x}: {:02x?}", rip, &bytes[..4]));
+            }
+            self.decode_cache.insert(rip, decoded);
+            decoded
+        };
 
         let instr_len = instr.len() as u64;
         let next_rip = rip + instr_len;
@@ -1649,8 +1659,8 @@ impl Emulator {
         let a0 = self.cpu.regs.rdi;
         let a1 = self.cpu.regs.rsi;
         let a2 = self.cpu.regs.rdx;
-        let _a3 = self.cpu.regs.r10;
-        let _a4 = self.cpu.regs.r8;
+        let a3 = self.cpu.regs.r10;
+        let a4 = self.cpu.regs.r8;
         let _a5 = self.cpu.regs.r9;
 
         if std::env::var("CRUCIBLE_DEBUG_SYSCALL").is_ok() {
@@ -1681,7 +1691,7 @@ impl Emulator {
                 self.cpu.halted = true;
                 self.cpu.regs.rax = 0;
             }
-            sys_nr::WRITE => {
+            sys_nr::WRITE | sys_nr::SENDTO => {
                 let fd = a0 as i32;
                 let buf_addr = a1;
                 let count = a2 as usize;
@@ -1707,14 +1717,14 @@ impl Emulator {
                             conn.c2s_buffer.extend(data);
                             count as u64
                         } else {
-                            u64::MAX // -1
+                            (-9i64) as u64 // -EBADF
                         }
                     }
-                    _ => u64::MAX,
+                    _ => (-9i64) as u64,
                 };
                 self.cpu.regs.rax = written;
             }
-            sys_nr::READ => {
+            sys_nr::READ | sys_nr::RECVFROM => {
                 let fd = a0 as i32;
                 let buf_addr = a1;
                 let count = a2 as usize;
@@ -1722,15 +1732,25 @@ impl Emulator {
                 let read_bytes = match self.vkernel.fds.get_mut(&fd) {
                     Some(FileDescriptor::Socket {
                         state: SocketState::Connected { conn_id, .. },
+                        non_blocking,
                         ..
                     }) => {
+                        let is_non_blocking = *non_blocking;
                         if let Some(conn) = self.vkernel.network.connections.get_mut(conn_id) {
-                            let available = conn.c2s_buffer.len().min(count);
-                            let drained: Vec<u8> = conn.c2s_buffer.drain(..available).collect();
-                            self.mem.write_bytes(buf_addr, &drained);
-                            available as u64
+                            if !conn.c2s_buffer.is_empty() {
+                                let available = conn.c2s_buffer.len().min(count);
+                                let drained: Vec<u8> = conn.c2s_buffer.drain(..available).collect();
+                                self.mem.write_bytes(buf_addr, &drained);
+                                available as u64
+                            } else if conn.server_closed || conn.client_closed {
+                                0
+                            } else if is_non_blocking {
+                                (-11i64) as u64 // -EAGAIN
+                            } else {
+                                0
+                            }
                         } else {
-                            0
+                            (-9i64) as u64
                         }
                     }
                     _ => 0,
@@ -1746,6 +1766,9 @@ impl Emulator {
                     sock_type,
                     protocol,
                     state: SocketState::Unbound,
+                    non_blocking: false,
+                    reuse_addr: false,
+                    tcp_nodelay: false,
                 });
                 self.cpu.regs.rax = fd as u64;
             }
@@ -1820,8 +1843,9 @@ impl Emulator {
                     self.cpu.regs.rax = u64::MAX; // Connection refused
                 }
             }
-            sys_nr::ACCEPT => {
+            sys_nr::ACCEPT | sys_nr::ACCEPT4 => {
                 let listener_fd = a0 as i32;
+                let flags = if nr == sys_nr::ACCEPT4 { a3 as i32 } else { 0 };
                 let mut conn_to_accept = None;
 
                 if let Some(FileDescriptor::Socket {
@@ -1840,6 +1864,7 @@ impl Emulator {
                 }
 
                 if let Some((local, conn_id)) = conn_to_accept {
+                    let non_blocking = (flags & 0x800) != 0;
                     let client_socket_fd = self.vkernel.alloc_fd(FileDescriptor::Socket {
                         domain: 2,
                         sock_type: 1,
@@ -1849,15 +1874,207 @@ impl Emulator {
                             remote: SocketAddrV4::new(SocketAddrV4::LOCALHOST, 45000),
                             conn_id,
                         },
+                        non_blocking,
+                        reuse_addr: false,
+                        tcp_nodelay: false,
                     });
                     self.cpu.regs.rax = client_socket_fd as u64;
                 } else {
-                    self.cpu.regs.rax = u64::MAX; // Would block / no connection
+                    self.cpu.regs.rax = (-11i64) as u64; // -EAGAIN / would block
+                }
+            }
+            sys_nr::GETSOCKNAME => {
+                let fd = a0 as i32;
+                let addr_ptr = a1;
+                let addrlen_ptr = a2;
+
+                if let Some(FileDescriptor::Socket { state, .. }) = self.vkernel.fds.get(&fd) {
+                    let saddr = match state {
+                        SocketState::Bound(a) => *a,
+                        SocketState::Listening { addr, .. } => *addr,
+                        SocketState::Connected { local, .. } => *local,
+                        _ => SocketAddrV4::new(SocketAddrV4::LOCALHOST, 0),
+                    };
+                    self.mem.write_u16(addr_ptr, 2); // AF_INET
+                    self.mem.write_u16(addr_ptr + 2, saddr.port.to_be());
+                    self.mem.write_u32(addr_ptr + 4, saddr.ip.to_be());
+                    self.mem.write_u64(addr_ptr + 8, 0);
+                    if addrlen_ptr != 0 {
+                        self.mem.write_u32(addrlen_ptr, 16);
+                    }
+                    self.cpu.regs.rax = 0;
+                } else {
+                    self.cpu.regs.rax = (-9i64) as u64; // -EBADF
+                }
+            }
+            sys_nr::GETPEERNAME => {
+                let fd = a0 as i32;
+                let addr_ptr = a1;
+                let addrlen_ptr = a2;
+
+                if let Some(FileDescriptor::Socket { state, .. }) = self.vkernel.fds.get(&fd) {
+                    if let SocketState::Connected { remote, .. } = state {
+                        self.mem.write_u16(addr_ptr, 2); // AF_INET
+                        self.mem.write_u16(addr_ptr + 2, remote.port.to_be());
+                        self.mem.write_u32(addr_ptr + 4, remote.ip.to_be());
+                        self.mem.write_u64(addr_ptr + 8, 0);
+                        if addrlen_ptr != 0 {
+                            self.mem.write_u32(addrlen_ptr, 16);
+                        }
+                        self.cpu.regs.rax = 0;
+                    } else {
+                        self.cpu.regs.rax = (-107i64) as u64; // -ENOTCONN
+                    }
+                } else {
+                    self.cpu.regs.rax = (-9i64) as u64;
+                }
+            }
+            sys_nr::SETSOCKOPT => {
+                let fd = a0 as i32;
+                let level = a1 as i32;
+                let optname = a2 as i32;
+                let optval = a3;
+
+                if let Some(FileDescriptor::Socket { reuse_addr, tcp_nodelay, .. }) =
+                    self.vkernel.fds.get_mut(&fd)
+                {
+                    if level == 1 && optname == 2 {
+                        let val = self.mem.read_u32(optval).unwrap_or(0);
+                        *reuse_addr = val != 0;
+                    }
+                    if level == 6 && optname == 1 {
+                        let val = self.mem.read_u32(optval).unwrap_or(0);
+                        *tcp_nodelay = val != 0;
+                    }
+                    self.cpu.regs.rax = 0;
+                } else {
+                    self.cpu.regs.rax = (-9i64) as u64;
+                }
+            }
+            sys_nr::GETSOCKOPT => {
+                let fd = a0 as i32;
+                let level = a1 as i32;
+                let optname = a2 as i32;
+                let optval = a3;
+                let optlen_ptr = a4;
+
+                if let Some(FileDescriptor::Socket { reuse_addr, tcp_nodelay, .. }) =
+                    self.vkernel.fds.get(&fd)
+                {
+                    let mut val = 0u32;
+                    if level == 1 && optname == 2 {
+                        val = if *reuse_addr { 1 } else { 0 };
+                    }
+                    if level == 6 && optname == 1 {
+                        val = if *tcp_nodelay { 1 } else { 0 };
+                    }
+                    if optval != 0 {
+                        self.mem.write_u32(optval, val);
+                    }
+                    if optlen_ptr != 0 {
+                        self.mem.write_u32(optlen_ptr, 4);
+                    }
+                    self.cpu.regs.rax = 0;
+                } else {
+                    self.cpu.regs.rax = (-9i64) as u64;
+                }
+            }
+            sys_nr::EPOLL_CREATE | sys_nr::EPOLL_CREATE1 => {
+                let fd = self.vkernel.alloc_epoll();
+                self.cpu.regs.rax = fd as u64;
+            }
+            sys_nr::EPOLL_CTL => {
+                let epfd = a0 as i32;
+                let op = a1 as i32;
+                let target_fd = a2 as i32;
+                let event_ptr = a3;
+
+                let instance_id_opt = match self.vkernel.fds.get(&epfd) {
+                    Some(FileDescriptor::Epoll { instance_id }) => Some(*instance_id),
+                    _ => None,
+                };
+
+                if let Some(instance_id) = instance_id_opt {
+                    if let Some(instance) = self.vkernel.epoll_instances.get_mut(&instance_id) {
+                        match op {
+                            epoll_const::EPOLL_CTL_ADD | epoll_const::EPOLL_CTL_MOD => {
+                                let events = self.mem.read_u32(event_ptr).unwrap_or(0);
+                                let data = self.mem.read_u64(event_ptr + 4).unwrap_or(0);
+                                instance.watched.insert(
+                                    target_fd,
+                                    EpollWatchEntry { events, data },
+                                );
+                                self.cpu.regs.rax = 0;
+                            }
+                            epoll_const::EPOLL_CTL_DEL => {
+                                instance.watched.remove(&target_fd);
+                                self.cpu.regs.rax = 0;
+                            }
+                            _ => {
+                                self.cpu.regs.rax = (-22i64) as u64; // -EINVAL
+                            }
+                        }
+                    } else {
+                        self.cpu.regs.rax = (-9i64) as u64; // -EBADF
+                    }
+                } else {
+                    self.cpu.regs.rax = (-9i64) as u64; // -EBADF
+                }
+            }
+            sys_nr::EPOLL_WAIT | sys_nr::EPOLL_PWAIT => {
+                let epfd = a0 as i32;
+                let events_ptr = a1;
+                let maxevents = a2 as usize;
+                let timeout = a3 as i32;
+
+                let instance_id_opt = match self.vkernel.fds.get(&epfd) {
+                    Some(FileDescriptor::Epoll { instance_id }) => Some(*instance_id),
+                    _ => None,
+                };
+
+                if let Some(instance_id) = instance_id_opt {
+                    let ready_events = if let Some(instance) = self.vkernel.epoll_instances.get(&instance_id) {
+                        instance.poll_ready(&self.vkernel.fds, &self.vkernel.network)
+                    } else {
+                        Vec::new()
+                    };
+
+                    if ready_events.is_empty() {
+                        if timeout > 0 {
+                            self.vkernel.virtual_time.0 += (timeout as u64).min(10) * 1_000_000;
+                        }
+                        self.cpu.regs.rax = 0;
+                    } else {
+                        let to_write = ready_events.len().min(maxevents);
+                        for (i, ev) in ready_events.iter().take(to_write).enumerate() {
+                            let item_ptr = events_ptr + (i as u64) * 12;
+                            self.mem.write_u32(item_ptr, ev.events);
+                            self.mem.write_u64(item_ptr + 4, ev.data);
+                        }
+                        self.cpu.regs.rax = to_write as u64;
+                    }
+                } else {
+                    self.cpu.regs.rax = (-9i64) as u64;
                 }
             }
             sys_nr::CLOSE => {
                 let fd = a0 as i32;
-                self.vkernel.fds.remove(&fd);
+                if let Some(fd_obj) = self.vkernel.fds.remove(&fd) {
+                    match fd_obj {
+                        FileDescriptor::Socket {
+                            state: SocketState::Connected { conn_id, .. },
+                            ..
+                        } => {
+                            if let Some(conn) = self.vkernel.network.connections.get_mut(&conn_id) {
+                                conn.server_closed = true;
+                            }
+                        }
+                        FileDescriptor::Epoll { instance_id } => {
+                            self.vkernel.epoll_instances.remove(&instance_id);
+                        }
+                        _ => {}
+                    }
+                }
                 self.cpu.regs.rax = 0;
             }
             sys_nr::POLL => {
@@ -1892,6 +2109,9 @@ impl Emulator {
                 };
                 self.cpu.regs.rax = addr;
             }
+            sys_nr::MUNMAP => {
+                self.cpu.regs.rax = 0;
+            }
             sys_nr::SCHED_YIELD => {
                 let tid = self.threads[self.current_thread_idx].id;
                 self.scheduler.notify_sync_event(tid, None, SyncEvent::Yield);
@@ -1908,7 +2128,35 @@ impl Emulator {
                 self.cpu.regs.rax = 0;
             }
             sys_nr::FCNTL => {
-                self.cpu.regs.rax = 0;
+                let fd = a0 as i32;
+                let cmd = a1 as i32;
+                let arg = a2;
+
+                match cmd {
+                    3 => {
+                        // F_GETFL
+                        let flags = if let Some(FileDescriptor::Socket { non_blocking, .. }) =
+                            self.vkernel.fds.get(&fd)
+                        {
+                            if *non_blocking { 0x800 } else { 0 }
+                        } else {
+                            0
+                        };
+                        self.cpu.regs.rax = flags as u64;
+                    }
+                    4 => {
+                        // F_SETFL
+                        if let Some(FileDescriptor::Socket { non_blocking, .. }) =
+                            self.vkernel.fds.get_mut(&fd)
+                        {
+                            *non_blocking = (arg & 0x800) != 0;
+                        }
+                        self.cpu.regs.rax = 0;
+                    }
+                    _ => {
+                        self.cpu.regs.rax = 0;
+                    }
+                }
             }
             sys_nr::NANOSLEEP => {
                 self.vkernel.virtual_time.0 += 1_000_000; // +1ms logical time

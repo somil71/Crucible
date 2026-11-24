@@ -493,6 +493,9 @@ fn test_vkernel_socket_fd_creation() {
         sock_type: 1,
         protocol: 0,
         state: SocketState::Unbound,
+        non_blocking: false,
+        reuse_addr: false,
+        tcp_nodelay: false,
     });
     assert_eq!(fd, 3);
     assert!(matches!(vk.fds.get(&fd), Some(FileDescriptor::Socket { .. })));
@@ -540,3 +543,64 @@ fn test_vkernel_set_exit_code() {
     vk.exit_code = Some(42);
     assert_eq!(vk.exit_code, Some(42));
 }
+
+#[test]
+fn test_vkernel_epoll_allocation() {
+    let mut vk = VirtualKernelContext::default();
+    let epfd = vk.alloc_epoll();
+    assert_eq!(epfd, 3);
+    assert!(matches!(vk.fds.get(&epfd), Some(FileDescriptor::Epoll { instance_id: 1 })));
+    assert!(vk.epoll_instances.contains_key(&1));
+}
+
+#[test]
+fn test_vkernel_epoll_poll_ready_listening_socket() {
+    let mut vk = VirtualKernelContext::default();
+    let saddr = SocketAddrV4::new(SocketAddrV4::LOCALHOST, 8080);
+    let srv_fd = vk.alloc_fd(FileDescriptor::Socket {
+        domain: 2,
+        sock_type: 1,
+        protocol: 0,
+        state: SocketState::Listening {
+            addr: saddr,
+            backlog: 10,
+            incoming_queue: std::collections::VecDeque::new(),
+        },
+        non_blocking: false,
+        reuse_addr: true,
+        tcp_nodelay: false,
+    });
+
+    let epfd = vk.alloc_epoll();
+    if let Some(FileDescriptor::Epoll { instance_id }) = vk.fds.get(&epfd) {
+        let instance = vk.epoll_instances.get_mut(instance_id).unwrap();
+        instance.watched.insert(srv_fd, crucible_vkernel::EpollWatchEntry {
+            events: crucible_vkernel::epoll_const::EPOLLIN,
+            data: 42,
+        });
+    }
+
+    // When queue is empty, no event ready
+    let instance_id = match vk.fds.get(&epfd).unwrap() {
+        FileDescriptor::Epoll { instance_id } => *instance_id,
+        _ => unreachable!(),
+    };
+    let ready = vk.epoll_instances.get(&instance_id).unwrap().poll_ready(&vk.fds, &vk.network);
+    assert!(ready.is_empty());
+
+    // When connection arrives, EPOLLIN is ready
+    let conn_id = vk.network.allocate_connection();
+    if let Some(FileDescriptor::Socket {
+        state: SocketState::Listening { incoming_queue, .. },
+        ..
+    }) = vk.fds.get_mut(&srv_fd)
+    {
+        incoming_queue.push_back(conn_id);
+    }
+
+    let ready2 = vk.epoll_instances.get(&instance_id).unwrap().poll_ready(&vk.fds, &vk.network);
+    assert_eq!(ready2.len(), 1);
+    assert_eq!(ready2[0].data, 42);
+    assert_ne!(ready2[0].events & crucible_vkernel::epoll_const::EPOLLIN, 0);
+}
+

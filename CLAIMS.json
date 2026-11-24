@@ -167,6 +167,37 @@
           "seed_0xDEAD_BEEF_0003": "de179ba7eba6971858f2c4c9ae949e5604f5abd95f7eb1d0e79858d18b035528"
         }
       }
+    },
+    {
+      "id": "CLM-011",
+      "tier": "Tier C (User-Mode x86-64 & V-Kernel)",
+      "property": "Epoll I/O Multiplexing & Redis RESP Protocol Determinism",
+      "statement": "Tier C user-mode x86-64 emulator and virtual Linux kernel execute event-driven RESP (Redis) servers with epoll I/O multiplexing (epoll_create1, epoll_ctl, epoll_wait), socket options (SO_REUSEADDR, TCP_NODELAY), and non-blocking I/O with 100% byte-exact execution trace replay across repeated runs.",
+      "test_target": "crates/crucible-emu/tests/tier_c_redis_test.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "target_workload": "Event-driven Redis RESP protocol server compiled to static x86_64-unknown-linux-musl ELF",
+        "supported_commands": [
+          "PING",
+          "SET",
+          "GET",
+          "INCR",
+          "NULL_BULK_STRING"
+        ],
+        "multiplexing_subsystem": "Virtual Linux epoll (epoll_create1, epoll_ctl ADD/MOD/DEL, epoll_wait)",
+        "socket_features": [
+          "SO_REUSEADDR",
+          "O_NONBLOCK (fcntl F_SETFL)",
+          "getsockname",
+          "getpeername",
+          "getsockopt"
+        ],
+        "consecutive_runs_tested": 50,
+        "instructions_stepped_per_run": 21441,
+        "trace_divergences": 0,
+        "trace_hash": "e9c38b25a858901c91d27e554e75b84fd2c01b23aaeb2538800985cca7259533"
+      }
     }
   ]
 }
