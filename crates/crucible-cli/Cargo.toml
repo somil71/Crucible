@@ -11,6 +11,10 @@ crucible-vkernel = { path = "../crucible-vkernel" }
 crucible-emu = { path = "../crucible-emu" }
 crucible-checkers = { path = "../crucible-checkers" }
 crucible-trace = { path = "../crucible-trace" }
+crucible-sim = { path = "../crucible-sim" }
+sha2.workspace = true
+ed25519-dalek.workspace = true
+rand.workspace = true
 clap.workspace = true
 tokio.workspace = true
 tracing.workspace = true
@@ -22,3 +26,7 @@ serde_json.workspace = true
 [dev-dependencies]
 ed25519-dalek.workspace = true
 rand.workspace = true
+
+[[test]]
+name = "standalone_verifier"
+path = "../../tests/evidence/standalone_verifier.rs"

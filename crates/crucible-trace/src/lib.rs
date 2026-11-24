@@ -1,121 +1,122 @@
 //! Crucible Trace & Evidence Log - Cryptographic attestation and reproducible bundles.
 
-use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+pub mod bundle;
+pub mod columnar;
+pub mod event;
+pub mod merkle;
+pub mod verifier;
+
+pub use bundle::{EvidenceBundle, BUNDLE_SCHEMA_VERSION};
+pub use columnar::ColumnarTraceStore;
+pub use event::{EventKind, TraceEvent};
+pub use merkle::{AuditHop, MerkleProof, MerkleTree, SiblingPosition};
+pub use verifier::{DeterministicStateReplayer, StandaloneVerifier, TargetReplayer, VerificationReport};
+
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum TraceError {
-    #[error("Signature verification failed")]
+    #[error("Signature verification failed: invalid signature or corrupt public key")]
     InvalidSignature,
-    #[error("Trace hash mismatch: expected {expected}, actual {actual}")]
-    HashMismatch { expected: String, actual: String },
+    #[error("Merkle root mismatch: expected {expected}, actual {actual}")]
+    MerkleRootMismatch { expected: String, actual: String },
+    #[error("State hash mismatch: expected {expected}, actual {actual}")]
+    StateHashMismatch { expected: String, actual: String },
+    #[error("Replay divergence: expected Merkle root {expected_merkle_root}, actual {actual_merkle_root}")]
+    ReplayDivergence {
+        expected_merkle_root: String,
+        actual_merkle_root: String,
+    },
+    #[error("Serialization error: {0}")]
+    Serialization(String),
+    #[error("I/O error: {0}")]
+    Io(String),
+    #[error("Replay execution failed: {0}")]
+    ReplayError(String),
 }
 
-/// Standalone cryptographic evidence bundle.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EvidenceBundle {
-    pub seed: u64,
-    pub container_digest: String,
-    pub binary_build_hash: String,
-    pub fault_schedule_json: String,
-    pub trace_hash: String,
-    pub public_key_bytes: Vec<u8>,
-    pub signature_bytes: Vec<u8>,
+/// Simple hex encoder.
+pub fn hex_encode(data: impl AsRef<[u8]>) -> String {
+    data.as_ref().iter().map(|b| format!("{:02x}", b)).collect()
 }
 
-impl EvidenceBundle {
-    pub fn create(
-        seed: u64,
-        container_digest: String,
-        binary_build_hash: String,
-        fault_schedule_json: String,
-        trace_data: &[u8],
-        signing_key: &SigningKey,
-    ) -> Self {
-        let trace_hash = hex::encode(Sha256::digest(trace_data));
-        let mut msg_hasher = Sha256::new();
-        msg_hasher.update(seed.to_le_bytes());
-        msg_hasher.update(container_digest.as_bytes());
-        msg_hasher.update(binary_build_hash.as_bytes());
-        msg_hasher.update(fault_schedule_json.as_bytes());
-        msg_hasher.update(trace_hash.as_bytes());
-        let digest = msg_hasher.finalize();
-
-        let signature = signing_key.sign(&digest);
-        let verifying_key = signing_key.verifying_key();
-
-        Self {
-            seed,
-            container_digest,
-            binary_build_hash,
-            fault_schedule_json,
-            trace_hash,
-            public_key_bytes: verifying_key.to_bytes().to_vec(),
-            signature_bytes: signature.to_bytes().to_vec(),
-        }
+/// Simple hex decoder.
+pub fn hex_decode(s: &str) -> Result<Vec<u8>, TraceError> {
+    let s = s.trim();
+    if s.len() % 2 != 0 {
+        return Err(TraceError::Serialization(
+            "Odd length hex string".to_string(),
+        ));
     }
-
-    pub fn verify(&self) -> Result<(), TraceError> {
-        if self.public_key_bytes.len() != 32 || self.signature_bytes.len() != 64 {
-            return Err(TraceError::InvalidSignature);
-        }
-
-        let mut pk_arr = [0u8; 32];
-        pk_arr.copy_from_slice(&self.public_key_bytes);
-        let verifying_key =
-            VerifyingKey::from_bytes(&pk_arr).map_err(|_| TraceError::InvalidSignature)?;
-
-        let mut sig_arr = [0u8; 64];
-        sig_arr.copy_from_slice(&self.signature_bytes);
-        let signature = Signature::from_bytes(&sig_arr);
-
-        let mut msg_hasher = Sha256::new();
-        msg_hasher.update(self.seed.to_le_bytes());
-        msg_hasher.update(self.container_digest.as_bytes());
-        msg_hasher.update(self.binary_build_hash.as_bytes());
-        msg_hasher.update(self.fault_schedule_json.as_bytes());
-        msg_hasher.update(self.trace_hash.as_bytes());
-        let digest = msg_hasher.finalize();
-
-        verifying_key
-            .verify(&digest, &signature)
-            .map_err(|_| TraceError::InvalidSignature)
-    }
-}
-
-// Simple hex encoding helper for no-std/minimal dependencies
-mod hex {
-    pub fn encode(data: impl AsRef<[u8]>) -> String {
-        data.as_ref().iter().map(|b| format!("{:02x}", b)).collect()
-    }
+    (0..s.len())
+        .step_by(2)
+        .map(|i| {
+            u8::from_str_radix(&s[i..i + 2], 16)
+                .map_err(|e| TraceError::Serialization(format!("Invalid hex char: {e}")))
+        })
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ed25519_dalek::SigningKey;
     use rand::rngs::OsRng;
 
     #[test]
-    fn test_evidence_bundle_signature_verification() {
+    fn test_evidence_bundle_lifecycle_and_tamper_detection() {
         let mut csprng = OsRng;
         let signing_key = SigningKey::generate(&mut csprng);
 
-        let bundle = EvidenceBundle::create(
+        let mut events = Vec::new();
+        for i in 0..10 {
+            events.push(TraceEvent::new(
+                i,
+                i * 1000,
+                1,
+                1,
+                EventKind::InstructionStep,
+                format!("step_{i}").as_bytes(),
+                format!("instruction step {i}"),
+            ));
+        }
+
+        let bundle = EvidenceBundle::create_attested(
+            "bundle-001",
+            "2026-11-24T12:00:00Z",
+            "TierA",
+            "raft_consensus",
+            "sha256:container_abc123",
+            "git:commit:fedcba",
             42,
-            "sha256:abc1234".into(),
-            "git:commit:fedcba".into(),
-            "[]".into(),
-            b"execution trace binary bytes",
+            r#"{"injected_faults": []}"#,
+            events,
+            "state_hash_0x12345678",
             &signing_key,
         );
 
-        assert!(bundle.verify().is_ok());
+        // Verification must pass
+        assert!(bundle.verify_all().is_ok());
 
-        // Tamper test
-        let mut tampered = bundle.clone();
-        tampered.seed = 43;
-        assert!(tampered.verify().is_err());
+        // Merkle proof generation and verification
+        let leaf_hashes: Vec<[u8; 32]> = bundle.events.iter().map(|e| e.compute_leaf_hash()).collect();
+        let tree = MerkleTree::from_hashed_leaves(leaf_hashes);
+        let proof = tree.generate_proof(3).expect("proof for leaf 3");
+        assert!(proof.verify(&tree.root()));
+
+        // Tamper test: seed change
+        let mut tampered_seed = bundle.clone();
+        tampered_seed.seed = 999;
+        assert!(tampered_seed.verify_signature().is_err());
+
+        // Tamper test: event payload change
+        let mut tampered_event = bundle.clone();
+        tampered_event.events[0].summary = "corrupted".into();
+        assert!(tampered_event.verify_merkle_integrity().is_err());
+
+        // StandaloneVerifier test
+        let report = StandaloneVerifier::verify_static(&bundle).expect("report");
+        assert!(report.signature_valid);
+        assert!(report.merkle_root_valid);
     }
 }

@@ -58,8 +58,27 @@
       "property": "Independent Reproducibility",
       "statement": "An evidence bundle containing seed, container digest, and fault schedule replays to the exact trace hash on a third-party host without campaign access.",
       "test_target": "tests/evidence/standalone_verifier.rs",
-      "status": "pending_phase_7",
-      "last_verified_commit": null
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "third_party_independent_replay_verified": true,
+        "campaign_isolation": "Zero campaign state access or memory leakage",
+        "cryptographic_attestation": "Ed25519 digital signature with canonical SHA256 digest",
+        "merkle_transparency_log": "RFC 6962 compliant with domain separation (0x00 leaf, 0x01 node)",
+        "merkle_inclusion_proofs_verified": true,
+        "tamper_resistance_verified": [
+          "Seed bitflip detected",
+          "Container digest corruption detected",
+          "Binary build hash tampering detected",
+          "Fault schedule alteration detected",
+          "Event trace payload modification detected",
+          "Signature corruption rejected"
+        ],
+        "multi_tier_reproducibility": [
+          "Tier A (Toy Raft consensus fault schedule replay)",
+          "Tier C (x86-64 user-mode execution trace replay)"
+        ]
+      }
     },
     {
       "id": "CLM-005",

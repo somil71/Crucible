@@ -1,7 +1,9 @@
-/target
+target/
+**/target/
 **/*.rs.bk
 Cargo.lock
 .idea/
 .vscode/
 *.parquet
 *.trace
+*.json.tmp

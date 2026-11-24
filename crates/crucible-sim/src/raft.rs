@@ -342,9 +342,10 @@ impl RaftNode {
         let peers = match &self.config {
             ClusterConfig::Single(nodes) => nodes.clone(),
             ClusterConfig::Joint { old_config, new_config } => {
-                let mut set: HashSet<NodeId> = old_config.iter().copied().collect();
-                set.extend(new_config.iter().copied());
-                set.into_iter().collect()
+                let mut peers: Vec<NodeId> = old_config.iter().chain(new_config.iter()).copied().collect();
+                peers.sort();
+                peers.dedup();
+                peers
             }
         };
 
