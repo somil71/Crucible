@@ -268,6 +268,7 @@ pub fn memory_size_bytes(size: iced_x86::MemorySize) -> usize {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct VirtualCpu {
     pub regs: CpuRegisters,
     pub instruction_count: u64,

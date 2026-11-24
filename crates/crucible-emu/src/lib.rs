@@ -1,14 +1,16 @@
 //! Crucible Emulator - User-mode x86-64 execution engine with exact instruction counting.
 
+pub mod auditor;
 pub mod cpu;
 pub mod interp;
 pub mod loader;
 pub mod memory;
 
+pub use auditor::{DeterminismAuditor, DivergenceReport, DivergenceTarget};
 pub use cpu::{CpuRegisters, VirtualCpu};
-pub use interp::Emulator;
+pub use interp::{Emulator, EmulatorSnapshot};
 pub use loader::{load_elf, LoadedBinary};
-pub use memory::VirtualMemory;
+pub use memory::{VirtualMemory, VirtualMemorySnapshot};
 
 use crucible_core::{compute_trace_hash, ThreadId, VirtualTime};
 use crucible_vkernel::VirtualKernelContext;

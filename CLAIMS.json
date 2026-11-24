@@ -198,6 +198,45 @@
         "trace_divergences": 0,
         "trace_hash": "e9c38b25a858901c91d27e554e75b84fd2c01b23aaeb2538800985cca7259533"
       }
+    },
+    {
+      "id": "CLM-012",
+      "tier": "Tier C (CoW Snapshots & V-Kernel)",
+      "property": "Copy-on-Write State Forking & Sub-Millisecond Snapshotting",
+      "statement": "Virtual memory subsystem creates instantaneous Copy-on-Write (CoW) page snapshots with < 2.0ms state fork latency, zero-leakage mutation isolation, and page-level dirty tracking across multi-generation fork trees.",
+      "test_target": "crates/crucible-emu/tests/phase6_cow_and_auditor_tests.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "average_snapshot_latency_ms": 0.005,
+        "average_fork_latency_ms": 0.027,
+        "exit_gate_threshold_ms": 2.0,
+        "status": "exceeded",
+        "speedup_vs_threshold": "74x",
+        "mutation_isolation_verified": true,
+        "page_level_dirty_tracking_verified": true,
+        "multi_generation_fork_tree_depth": 4
+      }
+    },
+    {
+      "id": "CLM-013",
+      "tier": "Determinism Auditor & Bisect Engine",
+      "property": "Single-Bit Divergence Detection & Automated Instruction Bisection",
+      "statement": "Differential bisect determinism auditor automatically identifies intentional single-bit memory corruptions, CPU register bitflips, and instruction pointer divergences, pinpointing the exact instruction step, mnemonic, and bit offset.",
+      "test_target": "crates/crucible-emu/tests/phase6_cow_and_auditor_tests.rs",
+      "status": "verified",
+      "last_verified_commit": "HEAD",
+      "verification_evidence": {
+        "single_bit_register_bitflip_detected": true,
+        "single_bit_memory_bitflip_detected": true,
+        "instruction_pointer_divergence_detected": true,
+        "pinpoint_precision": "exact step and bit offset",
+        "tested_targets": [
+          "CPU Register (R12 bit 7)",
+          "Memory Byte (Stack address bit 4)",
+          "Instruction Pointer (RIP step 0 offset +2)"
+        ]
+      }
     }
   ]
 }

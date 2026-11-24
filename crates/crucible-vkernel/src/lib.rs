@@ -181,7 +181,7 @@ impl SocketAddrV4 {
 }
 
 /// State of a virtual socket.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SocketState {
     Unbound,
     Bound(SocketAddrV4),
@@ -199,7 +199,7 @@ pub enum SocketState {
 }
 
 /// Bi-directional in-memory byte pipe connecting two sockets.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct VirtualConnection {
     pub c2s_buffer: VecDeque<u8>,
     pub s2c_buffer: VecDeque<u8>,
@@ -299,7 +299,7 @@ impl EpollInstance {
 }
 
 /// Virtual File Descriptor in a process table.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FileDescriptor {
     StandardInput,
     StandardOutput(Vec<u8>),
@@ -319,7 +319,7 @@ pub enum FileDescriptor {
 }
 
 /// Deterministic Virtual Network layer.
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct VirtualNetwork {
     pub bindings: HashMap<SocketAddrV4, i32>,
     pub connections: HashMap<u64, VirtualConnection>,
@@ -344,7 +344,7 @@ impl VirtualNetwork {
 }
 
 /// Virtual Futex registry for deterministic thread synchronization.
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct FutexRegistry {
     waiters: HashMap<u64, VecDeque<ThreadId>>,
 }
@@ -374,6 +374,7 @@ impl FutexRegistry {
 }
 
 /// Virtual Process Kernel Context.
+#[derive(Debug, Clone)]
 pub struct VirtualKernelContext {
     pub virtual_time: VirtualTime,
     pub futexes: FutexRegistry,

@@ -9,9 +9,23 @@ use crucible_vkernel::{
 };
 use iced_x86::{Code, Decoder, DecoderOptions, Instruction, Mnemonic};
 
+#[derive(Debug, Clone)]
 pub struct ExecutionTraceEntry {
     pub rip: u64,
     pub mnemonic: Mnemonic,
+    pub instruction_count: u64,
+}
+
+/// Point-in-time snapshot of the complete emulator process state.
+#[derive(Clone, Debug)]
+pub struct EmulatorSnapshot {
+    pub cpu: VirtualCpu,
+    pub current_thread_idx: usize,
+    pub threads: Vec<EmulatedThreadState>,
+    pub scheduler: CrucibleScheduler,
+    pub mem_snapshot: crate::memory::VirtualMemorySnapshot,
+    pub vkernel: VirtualKernelContext,
+    pub trace_log_len: usize,
     pub instruction_count: u64,
 }
 
@@ -83,6 +97,48 @@ impl Emulator {
             self.scheduler.register_thread(t.id);
         }
         self
+    }
+
+    /// Creates a full process checkpoint using CoW memory pages with < 2ms latency.
+    pub fn snapshot(&self) -> EmulatorSnapshot {
+        EmulatorSnapshot {
+            cpu: self.cpu.clone(),
+            current_thread_idx: self.current_thread_idx,
+            threads: self.threads.clone(),
+            scheduler: self.scheduler.clone(),
+            mem_snapshot: self.mem.snapshot(),
+            vkernel: self.vkernel.clone(),
+            trace_log_len: self.trace_log.len(),
+            instruction_count: self.cpu.instruction_count,
+        }
+    }
+
+    /// Restores the emulator to a bit-exact snapshot checkpoint.
+    pub fn restore(&mut self, snap: &EmulatorSnapshot) {
+        self.cpu = snap.cpu.clone();
+        self.current_thread_idx = snap.current_thread_idx;
+        self.threads = snap.threads.clone();
+        self.scheduler = snap.scheduler.clone();
+        self.mem.restore_snapshot(&snap.mem_snapshot);
+        self.vkernel = snap.vkernel.clone();
+        if self.trace_log.len() > snap.trace_log_len {
+            self.trace_log.truncate(snap.trace_log_len);
+        }
+    }
+
+    /// Forks the emulator into an independent child process with CoW memory pages.
+    pub fn fork(&self) -> Self {
+        let mut child = Emulator::new(self.cpu.regs.rip, self.cpu.regs.rsp);
+        child.cpu = self.cpu.clone();
+        child.current_thread_idx = self.current_thread_idx;
+        child.threads = self.threads.clone();
+        child.scheduler = self.scheduler.clone();
+        child.mem = self.mem.clone();
+        child.vkernel = self.vkernel.clone();
+        child.trace_log = self.trace_log.clone();
+        child.max_instructions = self.max_instructions;
+        child.decode_cache = self.decode_cache.clone();
+        child
     }
 
     pub fn schedule_next_thread(&mut self) -> bool {
