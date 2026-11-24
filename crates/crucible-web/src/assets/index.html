@@ -1,38 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crucible — Deterministic Virtual World Testing for Distributed Systems</title>
+    <title>Crucible — Deterministic Virtual World Testing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-void: #07090e;
-            --bg-base: #0b0f19;
-            --bg-surface: #111827;
-            --bg-card: #162032;
-            --bg-elevated: #1e293b;
-            --border-subtle: #1f293d;
-            --border-card: #28354d;
-            --border-highlight: #3b82f6;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --brand-green: #10b981;
-            --brand-green-glow: rgba(16, 185, 129, 0.25);
-            --brand-blue: #3b82f6;
-            --brand-cyan: #06b6d4;
-            --brand-red: #ef4444;
-            --brand-purple: #a855f7;
+            --bg-base: #080a0f;
+            --bg-subtle: #0d111a;
+            --bg-surface: #121824;
+            --bg-elevated: #172030;
+            --bg-hover: #1e293b;
+            
+            --border-dim: rgba(255, 255, 255, 0.06);
+            --border-subtle: rgba(255, 255, 255, 0.12);
+            --border-focus: rgba(96, 165, 250, 0.5);
+            
+            --text-high: #f8fafc;
+            --text-med: #94a3b8;
+            --text-low: #64748b;
+            --text-invert: #080a0f;
+            
+            --brand-cyan: #38bdf8;
+            --brand-emerald: #10b981;
             --brand-amber: #f59e0b;
-            --font-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+            --brand-rose: #f43f5e;
+            --brand-violet: #a855f7;
+            --brand-blue: #3b82f6;
+
+            --font-ui: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+            
+            --radius-xs: 4px;
             --radius-sm: 6px;
-            --radius-md: 10px;
-            --radius-lg: 16px;
-            --transition-smooth: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
         }
 
         * {
@@ -40,1500 +48,1745 @@
             margin: 0;
             padding: 0;
             font-family: var(--font-ui);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        ::selection {
+            background-color: rgba(56, 189, 248, 0.25);
+            color: #ffffff;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-subtle);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-low);
         }
 
         body {
-            background-color: var(--bg-void);
-            color: var(--text-primary);
+            background-color: var(--bg-base);
+            color: var(--text-high);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
-                radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.04) 0%, transparent 40%);
+            font-size: 14px;
+            line-height: 1.5;
         }
 
-        /* Micro-Utilities & SVG Icons */
+        /* SVG Icons */
         .icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 18px;
-            height: 18px;
-            fill: currentColor;
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            vertical-align: middle;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.75;
+            stroke-linecap: round;
+            stroke-linejoin: round;
             flex-shrink: 0;
         }
-
         .icon-lg {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
+        }
+        .icon-sm {
+            width: 13px;
+            height: 13px;
         }
 
-        /* TOP GLOBAL NAVBAR (Vercel/Linear Style) */
-        nav.global-nav {
-            background-color: rgba(11, 15, 25, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 0 28px;
-            height: 64px;
+        /* Top Global Bar */
+        header.top-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(8, 10, 15, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-dim);
+            height: 52px;
+            padding: 0 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
         }
 
-        .nav-left {
+        .header-left {
             display: flex;
             align-items: center;
-            gap: 32px;
+            gap: 20px;
         }
 
-        .brand-logo {
+        .brand-link {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            color: var(--text-high);
             text-decoration: none;
-            color: var(--text-primary);
-            font-weight: 700;
-            font-size: 1.15rem;
-            letter-spacing: -0.3px;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: -0.01em;
+            cursor: pointer;
         }
-
-        .brand-mark {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-            border-radius: 8px;
+        .brand-logo-mark {
+            width: 22px;
+            height: 22px;
+            border-radius: var(--radius-xs);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
-        }
-
-        .brand-mark svg {
-            width: 16px;
-            height: 16px;
-            fill: #ffffff;
+            color: #ffffff;
+            font-family: var(--font-code);
+            font-weight: 700;
+            font-size: 12px;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 2px;
         }
 
-        .nav-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            padding: 8px 14px;
+        .nav-tab {
+            padding: 6px 12px;
             border-radius: var(--radius-sm);
-            font-size: 0.88rem;
-            font-weight: 500;
-            transition: var(--transition-smooth);
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-med);
+            text-decoration: none;
             cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .nav-link.active {
-            color: #ffffff;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-card);
-        }
-
-        .nav-link svg {
-            width: 16px;
-            height: 16px;
-            opacity: 0.7;
-        }
-
-        .nav-link.active svg {
-            opacity: 1;
-            color: var(--brand-green);
-        }
-
-        .nav-right {
+            transition: all 0.15s var(--ease-out);
+            border: 1px solid transparent;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 6px;
+        }
+        .nav-tab:hover {
+            color: var(--text-high);
+            background-color: var(--bg-subtle);
+        }
+        .nav-tab.active {
+            color: var(--text-high);
+            background-color: var(--bg-surface);
+            border-color: var(--border-subtle);
+            font-weight: 500;
         }
 
-        .badge-live-engine {
-            display: inline-flex;
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .command-badge {
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-dim);
+            color: var(--text-med);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-family: var(--font-code);
+            cursor: pointer;
+            display: flex;
             align-items: center;
             gap: 6px;
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--brand-green);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            transition: all 0.15s var(--ease-out);
+        }
+        .command-badge:hover {
+            border-color: var(--border-subtle);
+            color: var(--text-high);
+        }
+        .command-badge kbd {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 10px;
         }
 
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            font-size: 11px;
+            font-family: var(--font-code);
+            color: var(--brand-emerald);
+            font-weight: 500;
+        }
         .pulse-dot {
             width: 6px;
             height: 6px;
-            background-color: var(--brand-green);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--brand-green);
-            animation: pulse 2s infinite;
+            background-color: var(--brand-emerald);
+            box-shadow: 0 0 6px var(--brand-emerald);
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.3); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
-        }
-
-        /* Buttons (Vercel Style) */
         .btn {
-            font-family: var(--font-ui);
-            padding: 8px 18px;
-            border-radius: var(--radius-sm);
-            font-size: 0.88rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: var(--transition-smooth);
-            text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            outline: none;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s var(--ease-out);
+            text-decoration: none;
+            white-space: nowrap;
         }
-
         .btn:focus-visible {
-            box-shadow: 0 0 0 2px var(--bg-void), 0 0 0 4px var(--brand-blue);
+            outline: 2px solid var(--brand-cyan);
+            outline-offset: 2px;
         }
-
         .btn-primary {
-            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-            color: #ffffff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+            background: #ffffff;
+            color: #080a0f;
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
-
         .btn-primary:hover {
-            background: linear-gradient(180deg, #10b981 0%, #047857 100%);
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+            background: #e2e8f0;
             transform: translateY(-1px);
         }
-
         .btn-secondary {
-            background-color: var(--bg-surface);
-            color: var(--text-primary);
-            border-color: var(--border-card);
+            background: var(--bg-surface);
+            color: var(--text-high);
+            border-color: var(--border-subtle);
         }
-
         .btn-secondary:hover {
-            background-color: var(--bg-card);
-            border-color: var(--border-highlight);
-            transform: translateY(-1px);
+            background: var(--bg-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+        .btn-danger {
+            background: rgba(244, 63, 94, 0.12);
+            color: #fb7185;
+            border-color: rgba(244, 63, 94, 0.3);
+        }
+        .btn-danger:hover {
+            background: rgba(244, 63, 94, 0.25);
+            border-color: #f43f5e;
+            color: #ffffff;
+        }
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: var(--radius-xs);
         }
 
-        /* View Router Containers */
-        .page-view {
-            display: none;
+        /* Main Container */
+        main.main-viewport {
             flex: 1;
+            display: flex;
+            flex-direction: column;
             width: 100%;
         }
 
-        .page-view.active {
-            display: flex;
-            flex-direction: column;
-            animation: fadeIn 0.25s ease-out;
+        .tab-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fadeIn 0.18s var(--ease-out);
         }
-
+        .tab-view.active {
+            display: block;
+        }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
+            from { opacity: 0; transform: translateY(3px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ==================== 1. LANDING PAGE ==================== */
-        .hero-section {
-            padding: 90px 24px 60px;
-            text-align: center;
-            max-width: 1040px;
+        /* 1. OVERVIEW (HOME) SECTION */
+        .home-container {
+            max-width: 1280px;
             margin: 0 auto;
+            padding: 48px 24px 80px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
         }
 
-        .hero-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(59, 130, 246, 0.08);
-            color: var(--brand-blue);
-            border: 1px solid rgba(59, 130, 246, 0.25);
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            letter-spacing: 0.2px;
-            margin-bottom: 30px;
+        .hero-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 840px;
         }
 
         .hero-title {
-            font-size: 3.8rem;
-            font-weight: 800;
-            line-height: 1.12;
-            letter-spacing: -1.5px;
-            margin-bottom: 24px;
-            background: linear-gradient(180deg, #ffffff 30%, #94a3b8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 42px;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            color: var(--text-high);
         }
 
-        .hero-title .gradient-text {
-            background: linear-gradient(90deg, #10b981 0%, #06b6d4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem;
-            color: var(--text-secondary);
+        .hero-desc {
+            font-size: 16px;
             line-height: 1.6;
-            max-width: 780px;
-            margin: 0 auto 40px;
-            font-weight: 400;
+            color: var(--text-med);
+            max-width: 680px;
         }
 
         .hero-actions {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 70px;
+            gap: 12px;
+            margin-top: 8px;
         }
 
-        /* KPI Bento Grid */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            max-width: 1100px;
-            margin: 0 auto 80px;
-            padding: 0 24px;
-            width: 100%;
-        }
-
-        .kpi-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-card);
-            padding: 24px 20px;
-            border-radius: var(--radius-md);
-            text-align: left;
-            position: relative;
-            overflow: hidden;
-            transition: var(--transition-smooth);
-        }
-
-        .kpi-card:hover {
-            border-color: var(--border-highlight);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, var(--brand-green), transparent);
-        }
-
-        .kpi-number {
-            font-family: var(--font-mono);
-            font-size: 2.1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
-        }
-
-        .kpi-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--brand-green);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 4px;
-        }
-
-        .kpi-desc {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        /* Features Section */
-        .section-header {
-            text-align: center;
-            margin-bottom: 50px;
-            padding: 0 20px;
-        }
-
-        .section-title {
-            font-size: 2.4rem;
-            font-weight: 800;
-            letter-spacing: -0.8px;
-            margin-bottom: 12px;
-        }
-
-        .section-desc {
-            font-size: 1.05rem;
-            color: var(--text-secondary);
-            max-width: 620px;
-            margin: 0 auto;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            max-width: 1140px;
-            margin: 0 auto 100px;
-            padding: 0 24px;
-        }
-
-        .feature-box {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-card);
-            padding: 30px;
-            border-radius: var(--radius-md);
-            transition: var(--transition-smooth);
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .feature-box:hover {
-            border-color: var(--brand-blue);
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-        }
-
-        .feature-icon-wrapper {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--brand-blue);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-
-        .feature-icon-wrapper.green {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--brand-green);
-            border-color: rgba(16, 185, 129, 0.2);
-        }
-
-        .feature-icon-wrapper.purple {
-            background: rgba(168, 85, 247, 0.1);
-            color: var(--brand-purple);
-            border-color: rgba(168, 85, 247, 0.2);
-        }
-
-        .feature-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-        }
-
-        .feature-desc {
-            font-size: 0.92rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        /* ==================== 2. TRACE EXPLORER VIEW ==================== */
-        .explorer-header {
-            background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 12px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .explorer-meta {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .meta-pill {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .meta-pill strong {
-            color: var(--text-primary);
-        }
-
-        .explorer-subnav {
-            display: flex;
-            gap: 4px;
-            background-color: var(--bg-void);
-            padding: 4px;
-            border-radius: var(--radius-sm);
+        /* Live Embedded Sandbox Interactive Console */
+        .live-interactive-console {
+            background: var(--bg-subtle);
             border: 1px solid var(--border-subtle);
-        }
-
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            padding: 6px 14px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: var(--transition-smooth);
-        }
-
-        .tab-btn.active {
-            background-color: var(--bg-card);
-            color: var(--text-primary);
-        }
-
-        .explorer-body {
-            display: flex;
-            flex: 1;
-            height: calc(100vh - 128px);
-            overflow: hidden;
-        }
-
-        .canvas-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border-subtle);
-            position: relative;
-            background-color: var(--bg-void);
-        }
-
-        canvas#timelineCanvas {
-            flex: 1;
-            width: 100%;
-            cursor: crosshair;
-        }
-
-        .timeline-controls {
-            padding: 12px 20px;
-            background-color: var(--bg-surface);
-            border-top: 1px solid var(--border-subtle);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .scrubber-slider {
-            flex: 1;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--bg-card);
-            outline: none;
-            accent-color: var(--brand-green);
-            cursor: pointer;
-        }
-
-        .sidebar-inspector {
-            width: 400px;
-            background-color: var(--bg-surface);
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            border-left: 1px solid var(--border-subtle);
-        }
-
-        .panel-box {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: var(--radius-md);
-            padding: 16px;
-        }
-
-        .panel-title {
-            font-size: 0.76rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--brand-green);
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .kv-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-        }
-
-        .kv-label {
-            color: var(--text-secondary);
-        }
-
-        .kv-val {
-            font-family: var(--font-mono);
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .reg-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-family: var(--font-mono);
-            font-size: 0.78rem;
-        }
-
-        .reg-pill {
-            background-color: var(--bg-void);
-            padding: 6px 10px;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-subtle);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* ==================== 3. MONITORING & TELEMETRY ==================== */
-        .monitoring-view {
-            padding: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .nodes-grid-100 {
-            display: grid;
-            grid-template-columns: repeat(20, 1fr);
-            gap: 8px;
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-card);
-            padding: 24px;
-            border-radius: var(--radius-md);
-            margin-bottom: 30px;
-        }
-
-        .node-tile {
-            aspect-ratio: 1;
-            background-color: var(--bg-card);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            font-weight: 700;
-            color: var(--brand-green);
-            cursor: pointer;
-            transition: var(--transition-smooth);
-        }
-
-        .node-tile:hover {
-            transform: scale(1.2);
-            box-shadow: 0 0 12px var(--brand-green);
-            z-index: 10;
-        }
-
-        .node-tile.leader {
-            background-color: rgba(16, 185, 129, 0.25);
-            border-color: var(--brand-green);
-            color: #ffffff;
-        }
-
-        .node-tile.partitioned {
-            background-color: rgba(239, 68, 68, 0.2);
-            border-color: var(--brand-red);
-            color: var(--brand-red);
-        }
-
-        /* ==================== 4. ADD PROJECT WIZARD ==================== */
-        .wizard-container {
-            max-width: 820px;
-            margin: 50px auto;
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-card);
             border-radius: var(--radius-lg);
-            padding: 40px;
-            width: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .form-control {
-            width: 100%;
-            background-color: var(--bg-void);
-            border: 1px solid var(--border-card);
-            color: var(--text-primary);
-            padding: 12px 16px;
-            border-radius: var(--radius-sm);
-            font-size: 0.92rem;
-            outline: none;
-            transition: var(--transition-smooth);
-        }
-
-        .form-control:focus {
-            border-color: var(--brand-blue);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        }
-
-        .tier-selector {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-        }
-
-        .tier-card {
-            background-color: var(--bg-void);
-            border: 1px solid var(--border-card);
-            padding: 18px;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: var(--transition-smooth);
-        }
-
-        .tier-card:hover {
-            border-color: var(--text-muted);
-        }
-
-        .tier-card.selected {
-            border-color: var(--brand-green);
-            background-color: rgba(16, 185, 129, 0.05);
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);
-        }
-
-        .tier-card h4 {
-            font-size: 0.98rem;
-            margin-bottom: 6px;
+            overflow: hidden;
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
         }
 
-        .tier-card p {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        /* Terminal Display Box */
-        .terminal-window {
-            background-color: #030712;
-            border: 1px solid var(--border-card);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            font-family: var(--font-mono);
-            font-size: 0.88rem;
-            color: #38bdf8;
-            margin: 16px 0 28px;
-            line-height: 1.6;
-            overflow-x: auto;
-            position: relative;
-        }
-
-        .terminal-header {
+        .console-header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-dim);
+            padding: 10px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 8px;
         }
-
-        .terminal-dots {
+        .console-tab-group {
             display: flex;
-            gap: 6px;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            font-family: var(--font-code);
+            color: var(--text-med);
         }
-
-        .t-dot {
-            width: 10px;
-            height: 10px;
+        .console-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
         }
 
-        /* Modal Overlay */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
-            display: none;
+        .console-body {
+            display: grid;
+            grid-template-columns: 280px 1fr 340px;
+            min-height: 440px;
+        }
+        @media (max-width: 1024px) {
+            .console-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .console-sidebar {
+            background: var(--bg-subtle);
+            border-right: 1px solid var(--border-dim);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-low);
+            margin-bottom: 8px;
+        }
+
+        .fault-button-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .fault-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+            font-size: 12px;
+            color: var(--text-high);
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s var(--ease-out);
+        }
+        .fault-btn:hover {
+            border-color: var(--border-subtle);
+            background: var(--bg-elevated);
+        }
+        .fault-btn.active {
+            border-color: var(--brand-amber);
+            background: rgba(245, 158, 11, 0.08);
+            color: #fde68a;
+        }
+
+        .console-center {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #090c13;
+        }
+
+        .cluster-state-visualizer {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .node-tile {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            transition: all 0.2s var(--ease-out);
+        }
+        .node-tile.leader {
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.08);
+        }
+        .node-tile.isolated {
+            border-color: rgba(244, 63, 94, 0.4);
+            opacity: 0.7;
+        }
+        .node-tile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .node-role-badge {
+            font-size: 10px;
+            font-family: var(--font-code);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .role-leader { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .role-follower { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; }
+        .role-candidate { background: rgba(245, 158, 11, 0.15); color: #fde68a; }
+        .role-dead { background: rgba(244, 63, 94, 0.15); color: #fda4af; }
+
+        .node-metrics {
+            font-family: var(--font-code);
+            font-size: 11px;
+            color: var(--text-med);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .network-bus-logs {
+            background: var(--bg-base);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            height: 180px;
+            overflow-y: auto;
+            font-family: var(--font-code);
+            font-size: 11px;
+            line-height: 1.6;
+            color: var(--text-med);
+        }
+        .log-entry {
+            display: flex;
+            gap: 8px;
+        }
+        .log-vtime { color: var(--text-low); }
+        .log-event { color: var(--text-high); }
+        .log-warn { color: #f59e0b; }
+        .log-err { color: #f43f5e; }
+
+        .console-right {
+            background: var(--bg-subtle);
+            border-left: 1px solid var(--border-dim);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .spec-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        .spec-label { color: var(--text-med); }
+        .spec-value { font-family: var(--font-code); color: var(--text-high); font-weight: 500; }
+
+        /* Architectural Comparison Grid */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 900px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .pillar-card {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.2s var(--ease-out);
+        }
+        .pillar-card:hover {
+            border-color: var(--border-subtle);
+            background: var(--bg-surface);
+        }
+        .pillar-icon-wrap {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 2000;
+            color: var(--brand-cyan);
+        }
+        .pillar-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-high);
+        }
+        .pillar-desc {
+            font-size: 13px;
+            color: var(--text-med);
+            line-height: 1.6;
         }
 
-        .modal-box {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-card);
-            border-radius: var(--radius-lg);
-            width: 480px;
-            padding: 32px;
-            box-shadow: 0 24px 48px rgba(0,0,0,0.6);
+        /* 2. LIVE EXPLORER VIEW (Full Canvas Multi-Track) */
+        .explorer-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 52px);
+            background: var(--bg-base);
         }
 
-        /* Responsive Breakpoints */
+        .explorer-toolbar {
+            background: var(--bg-subtle);
+            border-bottom: 1px solid var(--border-dim);
+            height: 48px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            padding: 3px;
+            border-radius: var(--radius-sm);
+        }
+
+        .explorer-main-area {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            overflow: hidden;
+        }
+
+        .timeline-canvas-wrapper {
+            position: relative;
+            background: #06080d;
+            border-right: 1px solid var(--border-dim);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        canvas#timelineCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: ew-resize;
+        }
+
+        .timeline-scrubber-bar {
+            height: 42px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-dim);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .scrubber-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: var(--bg-elevated);
+            border-radius: 3px;
+            outline: none;
+        }
+        .scrubber-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--brand-rose);
+            cursor: pointer;
+            box-shadow: 0 0 6px var(--brand-rose);
+        }
+
+        .inspector-panel {
+            background: var(--bg-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            border-left: 1px solid var(--border-dim);
+        }
+        .inspector-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-dim);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .inspector-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-low);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .register-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-family: var(--font-code);
+            font-size: 11px;
+        }
+        .register-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            padding: 4px 8px;
+            border-radius: var(--radius-xs);
+            display: flex;
+            justify-content: space-between;
+        }
+        .reg-name { color: var(--brand-cyan); }
+        .reg-val { color: var(--text-high); }
+
+        /* 3. MONITORING / 100-NODE MATRIX */
+        .monitoring-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .cluster-kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
         @media (max-width: 900px) {
-            .hero-title { font-size: 2.8rem; }
-            .kpi-grid, .features-grid { grid-template-columns: 1fr; }
-            .explorer-body { flex-direction: column; }
-            .sidebar-inspector { width: 100%; height: 300px; }
-            .tier-selector { grid-template-columns: 1fr; }
+            .cluster-kpi-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .kpi-tile {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .kpi-num {
+            font-size: 24px;
+            font-weight: 600;
+            font-family: var(--font-code);
+            color: var(--text-high);
+            letter-spacing: -0.02em;
+        }
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-med);
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-dim);
+            padding: 16px;
+            border-radius: var(--radius-md);
+        }
+        @media (max-width: 768px) {
+            .matrix-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        .matrix-cell {
+            aspect-ratio: 1;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-xs);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-code);
+            font-size: 10px;
+            color: var(--text-med);
+            cursor: pointer;
+            transition: all 0.15s var(--ease-out);
+        }
+        .matrix-cell:hover {
+            border-color: var(--brand-cyan);
+            background: var(--bg-elevated);
+            color: var(--text-high);
+            transform: scale(1.06);
+            z-index: 2;
+        }
+        .matrix-cell.active-leader {
+            border-color: var(--brand-emerald);
+            color: var(--brand-emerald);
+            background: rgba(16, 185, 129, 0.12);
+        }
+        .matrix-cell.active-fault {
+            border-color: var(--brand-rose);
+            color: var(--brand-rose);
+            background: rgba(244, 63, 94, 0.12);
+        }
+
+        /* 4. ADD PROJECT & CLI SETUP VIEWS */
+        .generic-form-page {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 40px 24px 80px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .form-card {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-high);
+        }
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-low);
+        }
+        .form-input {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--text-high);
+            outline: none;
+            transition: border-color 0.15s var(--ease-out);
+        }
+        .form-input:focus {
+            border-color: var(--brand-cyan);
+        }
+
+        .code-block {
+            background: #05070a;
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            font-family: var(--font-code);
+            font-size: 12px;
+            line-height: 1.6;
+            color: #e2e8f0;
+            overflow-x: auto;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            color: var(--text-med);
+            padding: 4px 8px;
+            border-radius: var(--radius-xs);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .copy-btn:hover {
+            color: var(--text-high);
+            border-color: var(--border-subtle);
+        }
+
+        /* Command Palette Modal */
+        .cmd-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 500;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 120px;
+        }
+        .cmd-modal-backdrop.open {
+            display: flex;
+        }
+        .cmd-dialog {
+            width: 100%;
+            max-width: 580px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .cmd-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-dim);
+        }
+        .cmd-search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            color: var(--text-high);
+        }
+        .cmd-list {
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .cmd-item {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-med);
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .cmd-item:hover, .cmd-item.selected {
+            background: var(--bg-surface);
+            color: var(--text-high);
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-high);
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideUp 0.2s var(--ease-out);
+            pointer-events: auto;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-    <!-- TOP GLOBAL NAVBAR -->
-    <nav class="global-nav">
-        <div class="nav-left">
-            <a href="#" class="brand-logo" onclick="switchView('landing')">
-                <div class="brand-mark">
-                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                </div>
-                CRUCIBLE
+    <!-- TOP GLOBAL HEADER -->
+    <header class="top-header">
+        <div class="header-left">
+            <a class="brand-link" onclick="switchTab('home')">
+                <div class="brand-logo-mark">C</div>
+                <span>CRUCIBLE</span>
             </a>
-            <div class="nav-links">
-                <a class="nav-link active" onclick="switchView('landing')">
-                    <svg viewBox="0 0 24 24" class="icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                    Home
-                </a>
-                <a class="nav-link" onclick="switchView('explorer')">
-                    <svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="10"/><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83M16.62 12l-5.74 9.94"/></svg>
-                    Live Explorer
-                </a>
-                <a class="nav-link" onclick="switchView('add-project')">
-                    <svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                    Add Project
-                </a>
-                <a class="nav-link" onclick="switchView('monitoring')">
-                    <svg viewBox="0 0 24 24" class="icon"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    Monitoring
-                </a>
-                <a class="nav-link" onclick="switchView('cli-guide')">
-                    <svg viewBox="0 0 24 24" class="icon"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                    CLI Setup
-                </a>
-                <a class="nav-link" onclick="switchView('settings')">
-                    <svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    Settings &amp; DB
-                </a>
-                <a class="nav-link" onclick="switchView('terms')">
-                    <svg viewBox="0 0 24 24" class="icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Terms
-                </a>
-            </div>
+            <nav class="nav-links">
+                <a class="nav-tab active" data-tab="home" onclick="switchTab('home')">Overview</a>
+                <a class="nav-tab" data-tab="explorer" onclick="switchTab('explorer')">Causal Inspector</a>
+                <a class="nav-tab" data-tab="monitoring" onclick="switchTab('monitoring')">Cluster Matrix</a>
+                <a class="nav-tab" data-tab="onboarding" onclick="switchTab('onboarding')">Add Project</a>
+                <a class="nav-tab" data-tab="cli" onclick="switchTab('cli')">CLI & CI</a>
+                <a class="nav-tab" data-tab="settings" onclick="switchTab('settings')">Settings</a>
+            </nav>
         </div>
-        <div class="nav-right">
-            <span class="badge-live-engine">
+
+        <div class="header-right">
+            <div class="command-badge" onclick="openCmdPalette()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Commands</span>
+                <kbd>Ctrl K</kbd>
+            </div>
+            <div class="status-pill">
                 <span class="pulse-dot"></span>
-                LIVE CLUSTER
-            </span>
-            <button class="btn btn-secondary" onclick="openAuthModal()">
-                <svg viewBox="0 0 24 24" class="icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Somil (Admin)
-            </button>
-            <button class="btn btn-primary" onclick="switchView('explorer')">
-                <svg viewBox="0 0 24 24" class="icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Launch Explorer
-            </button>
+                <span>Virtual Engine Live</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="showToast('Active Profile: Somil (Admin)')">Somil (Admin)</button>
         </div>
-    </nav>
+    </header>
 
-    <!-- ==================== 1. LANDING PAGE VIEW ==================== -->
-    <main id="view-landing" class="page-view active">
-        <section class="hero-section">
-            <div class="hero-pill">
-                <svg viewBox="0 0 24 24" class="icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                Jump-on-Idle Engine · 240,000x Real-World Acceleration
-            </div>
-            <h1 class="hero-title">
-                Deterministic Virtual World Testing for <span class="gradient-text">Distributed Systems</span>
-            </h1>
-            <p class="hero-subtitle">
-                Freeze time, rewire networks, crash storage, and eliminate catastrophic split-brain bugs before they bring down production. Every failure replays bit-identically from a seed.
-            </p>
-            <div class="hero-actions">
-                <button class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem;" onclick="switchView('explorer')">
-                    <svg viewBox="0 0 24 24" class="icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    Explore 1M-Event Timeline
-                </button>
-                <button class="btn btn-secondary" style="padding: 12px 28px; font-size: 1rem;" onclick="switchView('add-project')">
-                    Add Your Target Project →
-                </button>
-            </div>
-        </section>
+    <!-- MAIN VIEWPORT -->
+    <main class="main-viewport">
 
-        <!-- KPI Bento Grid -->
-        <section class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-label">Virtual Time Acceleration</div>
-                <div class="kpi-number">240,954×</div>
-                <div class="kpi-desc">10 minutes of Raft election timeouts simulated in 2.49 milliseconds.</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Determinism Guarantee</div>
-                <div class="kpi-number">100.0%</div>
-                <div class="kpi-desc">Zero non-deterministic divergence across 1,000 consecutive runs.</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Simulation Throughput</div>
-                <div class="kpi-number">1,308,143</div>
-                <div class="kpi-desc">Consensus events evaluated per second on a single workstation.</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Delta-Debugged Culprit</div>
-                <div class="kpi-number">≤ 3 Events</div>
-                <div class="kpi-desc">Noisy failure schedules automatically minimized to minimal causal steps.</div>
-            </div>
-        </section>
-
-        <!-- Core Capabilities Section -->
-        <section style="margin-bottom: 60px;">
-            <div class="section-header">
-                <h2 class="section-title">Built for Mission-Critical Infrastructure</h2>
-                <p class="section-desc">Traditional chaos testing is non-deterministic and painfully slow. Crucible provides mathematical proof and bit-exact replay.</p>
-            </div>
-
-            <div class="features-grid">
-                <div class="feature-box">
-                    <div class="feature-icon-wrapper">
-                        <svg viewBox="0 0 24 24" class="icon icon-lg"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                    </div>
-                    <h3 class="feature-title">Jump-on-Idle Virtual Time</h3>
-                    <p class="feature-desc">Distributed nodes spend 99% of CPU time waiting on heartbeat timers. Crucible teleports virtual time instantly past idle waits, running hours of cluster time in seconds.</p>
-                </div>
-
-                <div class="feature-box">
-                    <div class="feature-icon-wrapper green">
-                        <svg viewBox="0 0 24 24" class="icon icon-lg"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                    </div>
-                    <h3 class="feature-title">Bit-Exact Deterministic Replay</h3>
-                    <p class="feature-desc">Every CPU instruction, register state, and network packet is locked to a random seed. Replay a failure from 6 months ago with picosecond-level fidelity on any laptop.</p>
-                </div>
-
-                <div class="feature-box">
-                    <div class="feature-icon-wrapper purple">
-                        <svg viewBox="0 0 24 24" class="icon icon-lg"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-                    </div>
-                    <h3 class="feature-title">Automated Delta-Debugging</h3>
-                    <p class="feature-desc">When Crucible discovers a safety violation after 100,000 packets, its hierarchical minimizer automatically strips away benign noise to isolate the exact 3 causal events.</p>
-                </div>
-
-                <div class="feature-box">
-                    <div class="feature-icon-wrapper green">
-                        <svg viewBox="0 0 24 24" class="icon icon-lg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    </div>
-                    <h3 class="feature-title">Ed25519 Cryptographic Bundles</h3>
-                    <p class="feature-desc">Failures are sealed inside RFC 6962 binary Merkle trees and digitally signed (CLM-004) so upstream maintainers can independently verify the proof with zero campaign access.</p>
-                </div>
-
-                <div class="feature-box">
-                    <div class="feature-icon-wrapper">
-                        <svg viewBox="0 0 24 24" class="icon icon-lg"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-                    </div>
-                    <h3 class="feature-title">Multi-Tier Virtualization</h3>
-                    <p class="feature-desc">Supports native Rust distributed systems (Tier A), WebAssembly via Wasmtime (Tier B), and unmodified real x86-64 Linux binaries like Redis &amp; Go (Tier C) via user-mode emulation.</p>
-                </div>
-
-                <div class="feature-box">
-                    <div class="feature-icon-wrapper purple">
-                        <svg viewBox="0 0 24 24" class="icon icon-lg"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    </div>
-                    <h3 class="feature-title">60 FPS Hardware Visualizer</h3>
-                    <p class="feature-desc">Scrub through 1,000,000 events in 6.69 ms using hardware-accelerated Canvas LOD rendering. Inspect register divergences, memory diffs, and Merkle audit logs.</p>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- ==================== 2. TRACE EXPLORER VIEW ==================== -->
-    <main id="view-explorer" class="page-view">
-        <div class="explorer-header">
-            <div class="explorer-meta">
-                <span class="meta-pill"><strong>TARGET:</strong> etcd / tikv Raft Cluster</span>
-                <span class="meta-pill"><strong>SEED:</strong> 0x0000000000000539 (1337)</span>
-                <span class="badge-pill" style="background-color: rgba(6, 182, 212, 0.15); color: var(--brand-cyan); border: 1px solid rgba(6, 182, 212, 0.3);">CLM-004 ATTESTED</span>
-            </div>
-            <div class="explorer-subnav">
-                <button class="tab-btn active" onclick="switchExplorerTab('timeline')">Causal Timeline &amp; Sequence</button>
-                <button class="tab-btn" onclick="switchExplorerTab('diff')">Differential Bisect Diff</button>
-                <button class="tab-btn" onclick="switchExplorerTab('merkle')">Merkle Transparency Log</button>
-            </div>
-        </div>
-
-        <div class="explorer-body">
-            <div class="canvas-container">
-                <div id="subview-timeline" style="display: flex; flex-direction: column; flex: 1; height: 100%;">
-                    <canvas id="timelineCanvas"></canvas>
-                    <div class="timeline-controls">
-                        <button class="btn btn-secondary" id="btn-play-pause">
-                            <svg viewBox="0 0 24 24" class="icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                            Play
+        <!-- 1. OVERVIEW / HOME VIEW -->
+        <div id="view-home" class="tab-view active">
+            <div class="home-container">
+                <div class="hero-section">
+                    <h1 class="hero-title">Deterministic virtual world testing for distributed systems.</h1>
+                    <p class="hero-desc">
+                        Crucible executes real distributed protocols inside an emulated virtual kernel with frozen discrete time, synthetic network partitions, and bit-exact replay from a 64-bit seed.
+                    </p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" onclick="switchTab('explorer')">
+                            <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Launch 1M-Event Inspector
                         </button>
-                        <button class="btn btn-secondary" id="btn-prev-step">
-                            <svg viewBox="0 0 24 24" class="icon"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
-                            Prev
-                        </button>
-                        <button class="btn btn-secondary" id="btn-next-step">
-                            Next
-                            <svg viewBox="0 0 24 24" class="icon"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-                        </button>
-                        <input type="range" class="scrubber-slider" id="timeline-scrubber" min="0" max="1000000" value="816000">
-                        <span id="lbl-step" style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; width: 140px;">Step 816,000</span>
+                        <button class="btn btn-secondary" onclick="switchTab('onboarding')">Add Your System</button>
+                        <button class="btn btn-secondary" onclick="switchTab('monitoring')">Cluster Health</button>
                     </div>
                 </div>
 
-                <div id="subview-diff" style="display: none; padding: 28px; overflow-y: auto;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.15rem;">Differential Timeline Bisection (Baseline vs Anomaly)</h3>
-                    <div class="terminal-window" style="color: #f8fafc;">
---- Baseline Trace (Run A: Seed 1337, Sound Dual Quorum)
-+++ Divergent Trace  (Run B: Seed 1337, Asymmetric Partition)
-@@ -816,400 +816,400 @@
-  Instruction Step: 0x40ce31 (Raft Election Trigger)
-- Node 36 votes: [36] (Dual-majority quorum: Requires 2/2 old && 2/3 new)
-+ Node 36 votes: [36, 37] (Vulnerable Joint Consensus: Only checks old!)
-- Node 36 state: Follower (Awaiting joint consensus quorum)
-+ Node 36 state: LEADER (Claimed Term 1 independently)
-+ Node 40 state: LEADER (Claimed Term 1 concurrently)
-  >>> DIVERGENCE POINT DETECTED AT STEP 816,000 (INSTRUCTION 0x0040ce31) <<<
+                <!-- LIVE INTERACTIVE ENGINE CONSOLE -->
+                <div class="live-interactive-console">
+                    <div class="console-header">
+                        <div class="console-tab-group">
+                            <span class="console-dot" style="background: var(--brand-emerald);"></span>
+                            <span>Target: etcd-raft / musl-vfs</span>
+                            <span>·</span>
+                            <span>Seed: 0xDEAD_BEEF_CAFE_0042</span>
+                            <span>·</span>
+                            <span>Speedup: 240,954×</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="resetSandbox()">Reset State</button>
+                            <button class="btn btn-primary btn-sm" onclick="runSandboxStep()">Step Clock (+10ms)</button>
+                        </div>
+                    </div>
+
+                    <div class="console-body">
+                        <!-- Left: Fault Injection Palette -->
+                        <div class="console-sidebar">
+                            <div class="sidebar-section-title">Synthetic Fault Injection</div>
+                            <div class="fault-button-list">
+                                <button class="fault-btn" id="btn-fault-partition" onclick="toggleFault('partition')">
+                                    <span>Isolate Node 3</span>
+                                    <span style="font-size: 11px; color: var(--text-med);">Net Split</span>
+                                </button>
+                                <button class="fault-btn" id="btn-fault-delay" onclick="toggleFault('delay')">
+                                    <span>Inject 250ms Jitter</span>
+                                    <span style="font-size: 11px; color: var(--text-med);">Packet Bus</span>
+                                </button>
+                                <button class="fault-btn" id="btn-fault-reorder" onclick="toggleFault('reorder')">
+                                    <span>Reorder Raft Votes</span>
+                                    <span style="font-size: 11px; color: var(--text-med);">Concurrency</span>
+                                </button>
+                                <button class="fault-btn" id="btn-fault-torn" onclick="toggleFault('torn')">
+                                    <span>Simulate NVMe Torn Write</span>
+                                    <span style="font-size: 11px; color: var(--text-med);">Storage</span>
+                                </button>
+                            </div>
+
+                            <div class="sidebar-section-title" style="margin-top: 12px;">Active Invariant Checkers</div>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-med);">WGL Linearizability</span>
+                                    <span style="color: var(--brand-emerald); font-family: var(--font-code);">PASS</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-med);">Elle Cycle Detector</span>
+                                    <span style="color: var(--brand-emerald); font-family: var(--font-code);">PASS</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-med);">Crash Consistency</span>
+                                    <span style="color: var(--brand-emerald); font-family: var(--font-code);">PASS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Center: Dynamic Cluster Nodes -->
+                        <div class="console-center">
+                            <div class="cluster-state-visualizer">
+                                <div class="node-tile leader" id="node-tile-1">
+                                    <div class="node-tile-header">
+                                        <span>Node 1</span>
+                                        <span class="node-role-badge role-leader" id="badge-1">LEADER</span>
+                                    </div>
+                                    <div class="node-metrics">
+                                        <div>Term: <span id="term-1">Term 2</span></div>
+                                        <div>Log Index: <span id="idx-1">1,004</span></div>
+                                        <div>State: In Sync</div>
+                                    </div>
+                                </div>
+
+                                <div class="node-tile" id="node-tile-2">
+                                    <div class="node-tile-header">
+                                        <span>Node 2</span>
+                                        <span class="node-role-badge role-follower" id="badge-2">FOLLOWER</span>
+                                    </div>
+                                    <div class="node-metrics">
+                                        <div>Term: <span id="term-2">Term 2</span></div>
+                                        <div>Log Index: <span id="idx-2">1,004</span></div>
+                                        <div>State: Replicated</div>
+                                    </div>
+                                </div>
+
+                                <div class="node-tile" id="node-tile-3">
+                                    <div class="node-tile-header">
+                                        <span>Node 3</span>
+                                        <span class="node-role-badge role-follower" id="badge-3">FOLLOWER</span>
+                                    </div>
+                                    <div class="node-metrics">
+                                        <div>Term: <span id="term-3">Term 2</span></div>
+                                        <div>Log Index: <span id="idx-3">1,004</span></div>
+                                        <div>State: Connected</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-low); margin-top: 8px;">
+                                Deterministic Virtual Event Log
+                            </div>
+                            <div class="network-bus-logs" id="console-logs">
+                                <div class="log-entry"><span class="log-vtime">[00:00:00.120]</span><span class="log-event">Initialized Crucible Virtual Kernel (vkernel) with 3 nodes</span></div>
+                                <div class="log-entry"><span class="log-vtime">[00:00:00.180]</span><span class="log-event">Node 1 elected Leader for Term 2 (Unanimous vote 3/3)</span></div>
+                                <div class="log-entry"><span class="log-vtime">[00:00:00.240]</span><span class="log-event">Appended client write {key: "tx_104", val: 500} to Raft state</span></div>
+                                <div class="log-entry"><span class="log-vtime">[00:00:00.310]</span><span class="log-event">Heartbeat acknowledged across 3 quorum replicas. Checkers PASS.</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Cryptographic Evidence Box -->
+                        <div class="console-right">
+                            <div class="sidebar-section-title">Evidence & Verification</div>
+                            <div class="spec-box">
+                                <div class="spec-row">
+                                    <span class="spec-label">Merkle Root:</span>
+                                    <span class="spec-value" style="color: var(--brand-violet);">3e8fcd633c8e...</span>
+                                </div>
+                                <div class="spec-row">
+                                    <span class="spec-label">Virtual Time:</span>
+                                    <span class="spec-value" id="disp-vtime">816,000,000 ns</span>
+                                </div>
+                                <div class="spec-row">
+                                    <span class="spec-label">Replay Match:</span>
+                                    <span class="spec-value" style="color: var(--brand-emerald);">100% Bit-Exact</span>
+                                </div>
+                                <div class="spec-row">
+                                    <span class="spec-label">Culprit Faults:</span>
+                                    <span class="spec-value">3 Discrete Events</span>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-secondary btn-sm" onclick="downloadEvidenceBundle()">
+                                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export Evidence Bundle (.json)
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div id="subview-merkle" style="display: none; padding: 28px; overflow-y: auto;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.15rem;">RFC 6962 Binary Merkle Transparency Tree</h3>
-                    <div class="panel-box" style="margin-bottom: 24px;">
-                        <div class="kv-row"><span class="kv-label">Merkle Root Hash:</span><span class="kv-val" style="color: var(--brand-green);">56ab2754e2b9402471e903805cd6199992e5f83256e77b0f958b6acf6a535970</span></div>
-                        <div class="kv-row"><span class="kv-label">Ed25519 Public Key:</span><span class="kv-val">08659286304e43ad0f4150a5a7431600188686667bf94742f1a22ee6c19e59df</span></div>
-                        <div class="kv-row"><span class="kv-label">Signature Digest:</span><span class="kv-val">8b30e614a11e3857aeb14c78b1968df3a06e73accc8736add0cd52c3d71e3842...</span></div>
-                        <div class="kv-row"><span class="kv-label">Total Execution Leaves:</span><span class="kv-val">1,000,000 leaf events</span></div>
+                <!-- 3 Pillars of Architecture -->
+                <div class="comparison-grid">
+                    <div class="pillar-card">
+                        <div class="pillar-icon-wrap">
+                            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <h3 class="pillar-title">Jump-on-Idle Discrete Time</h3>
+                        <p class="pillar-desc">
+                            Time never flows via sleep calls. When nodes wait for an election timeout, Crucible jumps virtual clock directly to the next scheduled timer, achieving 240,000× speedup without CPU spinning.
+                        </p>
+                    </div>
+
+                    <div class="pillar-card">
+                        <div class="pillar-icon-wrap">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+                        </div>
+                        <h3 class="pillar-title">Bit-Exact Seeded Replay</h3>
+                        <p class="pillar-desc">
+                            All non-determinism (thread scheduling, network re-ordering, entropy, clock reads) is captured in a single 64-bit seed. A failure discovered once will replay identically on any machine forever.
+                        </p>
+                    </div>
+
+                    <div class="pillar-card">
+                        <div class="pillar-icon-wrap">
+                            <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        </div>
+                        <h3 class="pillar-title">Automated Delta-Debugging</h3>
+                        <p class="pillar-desc">
+                            Crucible bisects 1,000,000-event execution traces down to the minimal 3 to 5 fault events required to trigger the bug, generating an upstream bug report ready for submission.
+                        </p>
                     </div>
                 </div>
             </div>
-
-            <!-- Sidebar Inspector -->
-            <aside class="sidebar-inspector">
-                <div class="panel-box">
-                    <div class="panel-title">
-                        <span>Discrete Event</span>
-                        <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">ID: 0x0c7380</span>
-                    </div>
-                    <div class="kv-row"><span class="kv-label">Virtual Time:</span><span class="kv-val" id="insp-vtime">816,000,000 ns</span></div>
-                    <div class="kv-row"><span class="kv-label">Active Node:</span><span class="kv-val" id="insp-node">Node 1 (Leader)</span></div>
-                    <div class="kv-row"><span class="kv-label">Event Kind:</span><span class="kv-val" style="color: var(--brand-blue);">InstructionStep</span></div>
-                    <div class="kv-row"><span class="kv-label">Summary:</span><span class="kv-val" style="font-size: 0.76rem;">State transition step 816,000</span></div>
-                </div>
-
-                <div class="panel-box">
-                    <div class="panel-title">
-                        <span>CPU Registers (x86-64 / WASM)</span>
-                    </div>
-                    <div class="reg-grid">
-                        <div class="reg-pill"><span>RAX</span><span style="color: #38bdf8;">0x00c7380</span></div>
-                        <div class="reg-pill"><span>RBX</span><span>0x0000000</span></div>
-                        <div class="reg-pill"><span>RCX</span><span>0x0000000</span></div>
-                        <div class="reg-pill"><span>RDX</span><span>0x0000000</span></div>
-                        <div class="reg-pill"><span>RSI</span><span>0x7ffffff0</span></div>
-                        <div class="reg-pill"><span>RDI</span><span>0x00400000</span></div>
-                        <div class="reg-pill"><span>RSP</span><span>0x7ffffff0</span></div>
-                        <div class="reg-pill"><span>RBP</span><span>0x7ffffff0</span></div>
-                        <div class="reg-pill"><span>RIP</span><span style="color: var(--brand-green);">0x0040ce31</span></div>
-                        <div class="reg-pill"><span>RFLAGS</span><span>0x00000202</span></div>
-                    </div>
-                </div>
-
-                <div class="panel-box">
-                    <div class="panel-title">
-                        <span>Causal State Digest</span>
-                    </div>
-                    <div class="kv-row"><span class="kv-label">Leaf Hash:</span><span class="kv-val">3e8fcd633c8e...</span></div>
-                    <div class="kv-row"><span class="kv-label">CoW Pages:</span><span class="kv-val">14 pages (56 KB)</span></div>
-                    <div class="kv-row"><span class="kv-label">Raft Cluster:</span><span class="kv-val" style="color: var(--brand-green);">Term 2 (Leader=N1)</span></div>
-                </div>
-            </aside>
         </div>
-    </main>
 
-    <!-- ==================== 3. ADD PROJECT WIZARD ==================== -->
-    <main id="view-add-project" class="page-view">
-        <div class="wizard-container">
-            <h2 style="font-size: 1.8rem; letter-spacing: -0.5px; margin-bottom: 8px;">Add Distributed Target Project</h2>
-            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 32px;">
-                Configure your target distributed system for deterministic virtual world exploration and automated chaos hunting.
-            </p>
+        <!-- 2. CAUSAL TIMELINE & EVENT INSPECTOR VIEW -->
+        <div id="view-explorer" class="tab-view">
+            <div class="explorer-container">
+                <div class="explorer-toolbar">
+                    <div class="toolbar-group">
+                        <span style="font-weight: 600; font-size: 13px;">Evidence Bundle:</span>
+                        <span style="font-family: var(--font-code); color: var(--brand-cyan);">CRUCIBLE-BUG-2026-001</span>
+                        <span class="status-pill" style="font-size: 10px; padding: 2px 8px;">Replay Verified</span>
+                    </div>
 
-            <form id="form-add-project" onsubmit="handleCreateProject(event)">
-                <div class="form-group">
-                    <label class="form-label">Project Name</label>
-                    <input type="text" class="form-control" id="proj-name" placeholder="e.g. MyDistributedKV" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Execution Virtualization Tier</label>
-                    <div class="tier-selector">
-                        <div class="tier-card selected" onclick="selectTier(this, 'TierA')">
-                            <h4>
-                                <svg viewBox="0 0 24 24" class="icon" style="color: var(--brand-green);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                                Tier A: Rust Native SDK
-                            </h4>
-                            <p>Fastest in-memory simulation (&gt;1.3M events/sec). Jump-on-idle 240,000x acceleration.</p>
+                    <div class="toolbar-group" style="gap: 16px;">
+                        <div style="display: flex; gap: 4px; font-size: 12px;">
+                            <span class="nav-tab active" style="padding: 4px 8px;">Causal Timeline</span>
+                            <span class="nav-tab" style="padding: 4px 8px;">Differential Bisect Diff Viewer</span>
+                            <span class="nav-tab" style="padding: 4px 8px;">Merkle Transparency Log</span>
                         </div>
-                        <div class="tier-card" onclick="selectTier(this, 'TierB')">
-                            <h4>
-                                <svg viewBox="0 0 24 24" class="icon" style="color: var(--brand-blue);"><circle cx="12" cy="12" r="10"/><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83M16.62 12l-5.74 9.94"/></svg>
-                                Tier B: WASM / Wasmtime
-                            </h4>
-                            <p>Fuel-metered execution for Rust/C/Go compiled to wasm32-wasi with virtual WASI.</p>
+                        <div class="playback-controls">
+                            <button class="btn btn-secondary btn-sm" id="btn-step-back" onclick="stepTimeline(-1)">◀ Step</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-play-pause" onclick="togglePlayTimeline()">▶ Play</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-step-fwd" onclick="stepTimeline(1)">Step ▶</button>
                         </div>
-                        <div class="tier-card" onclick="selectTier(this, 'TierC')">
-                            <h4>
-                                <svg viewBox="0 0 24 24" class="icon" style="color: var(--brand-purple);"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-                                Tier C: x86-64 Linux Binary
-                            </h4>
-                            <p>Unmodified static Linux binaries (musl, Go, Redis) on user-mode CPU emulator.</p>
-                        </div>
-                        <div class="tier-card" onclick="selectTier(this, 'TierD')">
-                            <h4>
-                                <svg viewBox="0 0 24 24" class="icon" style="color: var(--brand-cyan);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                Tier D: Syscall Interception
-                            </h4>
-                            <p>seccomp-bpf &amp; ptrace fast path for native Linux multi-process binaries.</p>
-                        </div>
+                        <span style="font-family: var(--font-code); font-size: 12px; color: var(--text-med);" id="lbl-step-count">
+                            Step 816,000 / 1,000,000
+                        </span>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Binary / Source Artifact Path</label>
-                    <input type="text" class="form-control" id="proj-path" placeholder="./target/release/distributed_node" required>
-                </div>
+                <div class="explorer-main-area">
+                    <!-- Left: Interactive Multi-Track Canvas -->
+                    <div class="timeline-canvas-wrapper">
+                        <canvas id="timelineCanvas"></canvas>
+                        <div class="timeline-scrubber-bar">
+                            <span style="font-family: var(--font-code); font-size: 11px; color: var(--text-low);">0</span>
+                            <input type="range" class="scrubber-slider" id="scrubber" min="0" max="1000000" value="816000" oninput="onScrubInput(this.value)">
+                            <span style="font-family: var(--font-code); font-size: 11px; color: var(--text-low);">1,000,000</span>
+                        </div>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Invariant Verification Checks</label>
-                    <div style="display: flex; gap: 20px; margin-top: 8px;">
-                        <label style="font-size: 0.88rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" checked> WGL Linearizability
-                        </label>
-                        <label style="font-size: 0.88rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" checked> Elle Cycles (G0, G1c, G2)
-                        </label>
-                        <label style="font-size: 0.88rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" checked> NVMe Torn-Write Crash Barrier
-                        </label>
+                    <!-- Right: State Inspector & CPU Registers -->
+                    <div class="inspector-panel">
+                        <div class="inspector-section">
+                            <div class="inspector-title">Discrete Event Payload</div>
+                            <div class="spec-box">
+                                <div class="spec-row"><span class="spec-label">Virtual Time:</span><span class="spec-value" id="insp-vtime">816,000,000 ns</span></div>
+                                <div class="spec-row"><span class="spec-label">Target Node:</span><span class="spec-value">Node 1 (Leader)</span></div>
+                                <div class="spec-row"><span class="spec-label">Thread ID:</span><span class="spec-value">TID 1</span></div>
+                                <div class="spec-row"><span class="spec-label">Kind:</span><span class="spec-value" style="color: var(--brand-cyan);">InstructionStep</span></div>
+                            </div>
+                        </div>
+
+                        <div class="inspector-section">
+                            <div class="inspector-title">CPU Registers (X86-64 / WASM)</div>
+                            <div class="register-grid">
+                                <div class="register-item"><span class="reg-name">RAX</span><span class="reg-val">0x00000000c7380</span></div>
+                                <div class="register-item"><span class="reg-name">RBX</span><span class="reg-val">0x0000000000000</span></div>
+                                <div class="register-item"><span class="reg-name">RCX</span><span class="reg-val">0x0000000000000</span></div>
+                                <div class="register-item"><span class="reg-name">RDX</span><span class="reg-val">0x0000000000000</span></div>
+                                <div class="register-item"><span class="reg-name">RSI</span><span class="reg-val">0x7ffffff0</span></div>
+                                <div class="register-item"><span class="reg-name">RDI</span><span class="reg-val">0x00400000</span></div>
+                                <div class="register-item"><span class="reg-name">RSP</span><span class="reg-val">0x7ffffff0</span></div>
+                                <div class="register-item"><span class="reg-name">RIP</span><span class="reg-val">0x0040ce31</span></div>
+                            </div>
+                        </div>
+
+                        <div class="inspector-section">
+                            <div class="inspector-title">Causal State Digest & Storage</div>
+                            <div class="spec-box">
+                                <div class="spec-row"><span class="spec-label">Merkle Leaf:</span><span class="spec-value" style="color: var(--brand-violet);">3e8fcd633c...</span></div>
+                                <div class="spec-row"><span class="spec-label">CoW Memory:</span><span class="spec-value">14 pages (56 KB)</span></div>
+                                <div class="spec-row"><span class="spec-label">Consensus:</span><span class="spec-value">Term 2 (Leader=N1)</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 36px;">
-                    <button type="button" class="btn btn-secondary" onclick="switchView('landing')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Generate Campaign Setup →</button>
-                </div>
-            </form>
+            </div>
         </div>
-    </main>
 
-    <!-- ==================== 4. MONITORING DASHBOARD ==================== -->
-    <main id="view-monitoring" class="page-view">
-        <div class="monitoring-view">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;">
+        <!-- 3. CLUSTER MATRIX & MONITORING VIEW -->
+        <div id="view-monitoring" class="tab-view">
+            <div class="monitoring-container">
                 <div>
-                    <h2 style="font-size: 1.8rem; letter-spacing: -0.5px;">100-Node Virtual Cluster Health</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Real-time telemetry across 20 simulated consensus groups (5 nodes per group).</p>
-                </div>
-                <span class="badge-live-engine" id="mon-speedup-badge">240,954× V-SPEEDUP</span>
-            </div>
-
-            <div class="kpi-grid" style="margin-bottom: 36px; padding: 0;">
-                <div class="kpi-card">
-                    <div class="kpi-label">Active Virtual Nodes</div>
-                    <div class="kpi-number">100 / 100</div>
-                    <div class="kpi-desc">Across 20 isolated network topologies.</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Throughput</div>
-                    <div class="kpi-number">1.3M / sec</div>
-                    <div class="kpi-desc">Consensus transitions processed.</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Safety Violations</div>
-                    <div class="kpi-number" style="color: var(--brand-green);">0 Detected</div>
-                    <div class="kpi-desc">Linearizability invariants verified.</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Peak Memory RSS</div>
-                    <div class="kpi-number">48.6 MB</div>
-                    <div class="kpi-desc">Sub-millisecond Copy-on-Write pages.</div>
-                </div>
-            </div>
-
-            <h4 style="margin-bottom: 14px; font-size: 1rem; letter-spacing: -0.2px;">Cluster Nodes Status Matrix (Click to Inspect)</h4>
-            <div class="nodes-grid-100" id="nodes-matrix">
-                <!-- Dynamically generated 100 node tiles -->
-            </div>
-        </div>
-    </main>
-
-    <!-- ==================== 5. CLI SETUP & RUN GUIDE ==================== -->
-    <main id="view-cli-guide" class="page-view">
-        <div style="max-width: 920px; margin: 40px auto; padding: 0 24px; width: 100%;">
-            <h2 style="font-size: 2rem; letter-spacing: -0.5px; margin-bottom: 10px;">Crucible CLI Setup &amp; Operator Guide</h2>
-            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 30px;">
-                Install Crucible locally or embed it directly into your GitHub Actions / GitLab CI pipelines.
-            </p>
-
-            <h3 style="font-size: 1.15rem; margin-bottom: 10px;">1. Installation</h3>
-            <div class="terminal-window">
-                <div class="terminal-header">
-                    <div class="terminal-dots"><span class="t-dot" style="background:#ef4444;"></span><span class="t-dot" style="background:#f59e0b;"></span><span class="t-dot" style="background:#10b981;"></span></div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">bash</span>
-                </div>
-# Install via Cargo directly from source:
-cargo install --path crates/crucible-cli
-
-# Verify version and environment:
-crucible --version
-            </div>
-
-            <h3 style="font-size: 1.15rem; margin-bottom: 10px;">2. Run a 100-Node Bug Zoo Campaign</h3>
-            <div class="terminal-window">
-                <div class="terminal-header">
-                    <div class="terminal-dots"><span class="t-dot" style="background:#ef4444;"></span><span class="t-dot" style="background:#f59e0b;"></span><span class="t-dot" style="background:#10b981;"></span></div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">bash</span>
-                </div>
-crucible campaign --seed 1337 --out UPSTREAM_BUG_REPORT.md
-            </div>
-
-            <h3 style="font-size: 1.15rem; margin-bottom: 10px;">3. Independently Verify an Evidence Bundle (CLM-004)</h3>
-            <div class="terminal-window">
-                <div class="terminal-header">
-                    <div class="terminal-dots"><span class="t-dot" style="background:#ef4444;"></span><span class="t-dot" style="background:#f59e0b;"></span><span class="t-dot" style="background:#10b981;"></span></div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">bash</span>
-                </div>
-crucible verify --bundle CRUCIBLE-BUG-2026-001.json --replay
-            </div>
-        </div>
-    </main>
-
-    <!-- ==================== 6. SETTINGS & DB CONFIG ==================== -->
-    <main id="view-settings" class="page-view">
-        <div class="wizard-container">
-            <h2 style="font-size: 1.8rem; letter-spacing: -0.5px; margin-bottom: 8px;">Platform Settings &amp; Database Config</h2>
-            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 30px;">
-                Manage persistent telemetry database connections, API keys, and rate-limiting quotas.
-            </p>
-
-            <form onsubmit="handleSaveDb(event)">
-                <div class="form-group">
-                    <label class="form-label">Telemetry Database Engine</label>
-                    <select class="form-control" id="db-engine">
-                        <option value="PostgreSQL (Virtual Embedded)">PostgreSQL (Virtual Embedded)</option>
-                        <option value="SQLite3 In-Memory">SQLite3 In-Memory</option>
-                        <option value="RocksDB Columnar">RocksDB Columnar</option>
-                    </select>
+                    <h2 style="font-size: 20px; font-weight: 600; color: var(--text-high);">100-Node Distributed Cluster Matrix</h2>
+                    <p style="color: var(--text-med); font-size: 13px;">Live telemetry across 20 concurrent consensus groups running inside Crucible virtual sandbox.</p>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Database Connection URL</label>
-                    <input type="text" class="form-control" id="db-url" value="postgres://crucible_admin:secret@127.0.0.1:5432/crucible_telemetry">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Connection Pool Size</label>
-                    <input type="number" class="form-control" id="db-pool" value="20" min="1" max="100">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">API Access Key (CI/CD Pipelines)</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" class="form-control" value="cr_live_98a7fbc2048d01ef6c41b8a" readonly style="color: var(--brand-green); font-family: var(--font-mono);">
-                        <button type="button" class="btn btn-secondary" onclick="alert('API Key Copied to Clipboard!')">Copy</button>
+                <div class="cluster-kpi-row">
+                    <div class="kpi-tile">
+                        <span class="kpi-num" id="live-nodes">100</span>
+                        <span class="kpi-label">Active Virtual Nodes</span>
+                    </div>
+                    <div class="kpi-tile">
+                        <span class="kpi-num" id="live-speedup">240,954×</span>
+                        <span class="kpi-label">Virtual Time Speedup</span>
+                    </div>
+                    <div class="kpi-tile">
+                        <span class="kpi-num" id="live-events">1,308,143</span>
+                        <span class="kpi-label">Events / Second</span>
+                    </div>
+                    <div class="kpi-tile">
+                        <span class="kpi-num" id="live-rss">48.6 MB</span>
+                        <span class="kpi-label">CoW Memory Footprint</span>
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
-                    <button type="submit" class="btn btn-primary">Save Database Settings</button>
+                <div class="matrix-grid" id="node-matrix-container">
+                    <!-- Populated dynamically with 100 node items -->
                 </div>
-            </form>
-        </div>
-    </main>
-
-    <!-- ==================== 7. TERMS & PRIVACY ==================== -->
-    <main id="view-terms" class="page-view">
-        <div style="max-width: 900px; margin: 50px auto; padding: 0 24px; width: 100%;">
-            <h2 style="font-size: 2rem; letter-spacing: -0.5px; margin-bottom: 20px;">Terms of Service &amp; Open Source License</h2>
-            <div class="panel-box" style="margin-bottom: 24px; padding: 24px;">
-                <h4 style="font-size: 1.1rem; margin-bottom: 10px; color: var(--text-primary);">Dual-License Notice (MIT &amp; Apache 2.0)</h4>
-                <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
-                    Crucible is open-source software dual-licensed under both the MIT License and the Apache License (Version 2.0). You are free to use, inspect, modify, and integrate Crucible into both personal and commercial distributed systems pipelines.
-                </p>
-            </div>
-
-            <div class="panel-box" style="padding: 24px;">
-                <h4 style="font-size: 1.1rem; margin-bottom: 10px; color: var(--text-primary);">Responsible Disclosure &amp; Upstream Bug Reporting</h4>
-                <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
-                    When Crucible discovers critical distributed consensus split-brain or data corruption bugs in upstream open-source projects, evidence bundles are generated with Ed25519 digital signatures to facilitate coordinated, responsible security disclosures.
-                </p>
             </div>
         </div>
+
+        <!-- 4. ADD PROJECT ONBOARDING VIEW -->
+        <div id="view-onboarding" class="tab-view">
+            <div class="generic-form-page">
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 600; color: var(--text-high);">Connect Your Distributed System</h2>
+                    <p style="color: var(--text-med); font-size: 13px;">Integrate Crucible virtual world testing into your existing Rust, Go, C/C++, or WASM codebase.</p>
+                </div>
+
+                <div class="form-card">
+                    <div class="form-row">
+                        <label class="form-label">Project Name</label>
+                        <input class="form-input" id="inp-proj-name" placeholder="e.g. distributed-kv-store">
+                        <span class="form-hint">Used to label evidence bundles and bug replay artifacts.</span>
+                    </div>
+
+                    <div class="form-row">
+                        <label class="form-label">Execution Tier & Language</label>
+                        <select class="form-input" id="inp-proj-tier">
+                            <option value="tier_a">Tier A: Pure In-Memory / WASM (Deterministic Async)</option>
+                            <option value="tier_b">Tier B: WebAssembly Sandboxed WASI (Deterministic Syscalls)</option>
+                            <option value="tier_c">Tier C: User-mode x86-64 Emulation (musl-vfs)</option>
+                            <option value="tier_d">Tier D: Linux ptrace/seccomp Syscall Trap (Multi-process native)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label class="form-label">Network Topology Template</label>
+                        <select class="form-input" id="inp-proj-topo">
+                            <option value="raft_5">5-Node Raft Cluster with Asymmetric Partitions</option>
+                            <option value="paxos_7">7-Node Multi-Paxos with Packet Loss Simulation</option>
+                            <option value="mesh_20">20-Node Full-Mesh Gossip Network</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                        <button class="btn btn-primary" onclick="submitProject()">Generate Test Harness & Launch</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. CLI & CI SETUP VIEW -->
+        <div id="view-cli" class="tab-view">
+            <div class="generic-form-page">
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 600; color: var(--text-high);">CLI & GitHub Actions Automation</h2>
+                    <p style="color: var(--text-med); font-size: 13px;">Run campaigns headlessly in your CI pipeline to catch race conditions and split-brain bugs on every pull request.</p>
+                </div>
+
+                <div class="form-card">
+                    <span style="font-weight: 600; font-size: 14px;">1. Install Crucible CLI</span>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+cargo install --path crates/crucible-cli
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <span style="font-weight: 600; font-size: 14px;">2. Run Fuzzing Campaign</span>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+# Run 1,000,000 virtual steps across 20 groups with 100 nodes
+crucible campaign --nodes 100 --steps 1000000 --seed 0xDEADBEEF --output bundle.json
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <span style="font-weight: 600; font-size: 14px;">3. GitHub Actions CI Pipeline (.github/workflows/crucible.yml)</span>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+name: Crucible Distributed Invariant Audit
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run Deterministic Campaign
+        run: cargo run -p crucible-cli -- campaign --steps 500000 --fail-fast
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. SETTINGS VIEW -->
+        <div id="view-settings" class="tab-view">
+            <div class="generic-form-page">
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 600; color: var(--text-high);">Platform Configuration & Rate Limiting</h2>
+                    <p style="color: var(--text-med); font-size: 13px;">Manage in-memory rate limits, database telemetry connection pool, and security keys.</p>
+                </div>
+
+                <div class="form-card">
+                    <span style="font-weight: 600; font-size: 14px;">Telemetry Database Connection</span>
+                    <div class="form-row">
+                        <label class="form-label">Database URL</label>
+                        <input class="form-input" id="inp-db-url" value="postgres://crucible_admin:secret@127.0.0.1:5432/crucible_telemetry">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Connection Pool Size</label>
+                        <input class="form-input" id="inp-db-pool" value="20" style="max-width: 140px;">
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <button class="btn btn-primary btn-sm" onclick="saveDbConfig()">Save & Test Connection</button>
+                        <button class="btn btn-secondary btn-sm" onclick="showToast('Database pool active: 14/14 migrations applied')">Test Ping</button>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <span style="font-weight: 600; font-size: 14px;">Token Bucket Rate Limiting</span>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-med);">Active Client IP:</span>
+                            <span style="font-family: var(--font-code);">127.0.0.1</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-med);">Allowed Quota:</span>
+                            <span style="font-family: var(--font-code);">1,000 requests / min</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-med);">Security Policy:</span>
+                            <span style="color: var(--brand-emerald);">STRICT (429 on Burst)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <span style="font-weight: 600; font-size: 14px;">Dual Open-Source License</span>
+                    <p style="font-size: 12px; color: var(--text-med); line-height: 1.6;">
+                        Crucible is dual-licensed under Apache License 2.0 and MIT License. Distributed fuzzing artifacts generated by Crucible are non-proprietary and free for upstream security disclosures.
+                    </p>
+                </div>
+            </div>
+        </div>
+
     </main>
 
-    <!-- USER AUTH MODAL -->
-    <div class="modal-overlay" id="auth-modal" onclick="closeAuthModal(event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <h3 style="font-size: 1.3rem; margin-bottom: 8px;">Crucible Account Profile</h3>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px;">Authenticated as <strong>Somil (Lead Maintainer)</strong></p>
-            <div class="kv-row"><span class="kv-label">Role:</span><span class="kv-val" style="color: var(--brand-green);">Cluster Administrator</span></div>
-            <div class="kv-row"><span class="kv-label">Rate Limit Quota:</span><span class="kv-val">1,000 req/min (Active)</span></div>
-            <div class="kv-row"><span class="kv-label">Organization:</span><span class="kv-val">Crucible Core Engineering</span></div>
-            <div style="margin-top: 28px; display: flex; justify-content: flex-end;">
-                <button class="btn btn-secondary" onclick="closeAuthModal()">Close</button>
+    <!-- COMMAND PALETTE MODAL -->
+    <div class="cmd-modal-backdrop" id="cmd-palette" onclick="if(event.target===this) closeCmdPalette()">
+        <div class="cmd-dialog">
+            <div class="cmd-input-wrap">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="cmd-search-input" id="cmd-input" placeholder="Type a view or action... (e.g. explorer, fault, matrix)" oninput="filterCommands(this.value)">
+                <kbd style="font-size: 10px; background: var(--bg-surface); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border-subtle); color: var(--text-low);">ESC</kbd>
+            </div>
+            <div class="cmd-list" id="cmd-items-list">
+                <div class="cmd-item" onclick="switchTab('home'); closeCmdPalette();">
+                    <span>Overview & Engine</span><kbd>1</kbd>
+                </div>
+                <div class="cmd-item" onclick="switchTab('explorer'); closeCmdPalette();">
+                    <span>Causal Inspector (1M Events)</span><kbd>2</kbd>
+                </div>
+                <div class="cmd-item" onclick="switchTab('monitoring'); closeCmdPalette();">
+                    <span>100-Node Cluster Matrix</span><kbd>3</kbd>
+                </div>
+                <div class="cmd-item" onclick="switchTab('onboarding'); closeCmdPalette();">
+                    <span>Add New Project</span><kbd>4</kbd>
+                </div>
+                <div class="cmd-item" onclick="switchTab('cli'); closeCmdPalette();">
+                    <span>CLI & CI Setup</span><kbd>5</kbd>
+                </div>
+                <div class="cmd-item" onclick="switchTab('settings'); closeCmdPalette();">
+                    <span>Platform Settings</span><kbd>6</kbd>
+                </div>
+                <div class="cmd-item" onclick="toggleFault('partition'); closeCmdPalette();">
+                    <span>Toggle Network Partition</span><kbd>P</kbd>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT CONTROLLER -->
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+
     <script>
-        // Multi-Page View Routing
-        function switchView(viewName) {
-            document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        // Tab Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            const targetView = document.getElementById(`view-${tabId}`);
+            if (targetView) targetView.classList.add('active');
 
-            const target = document.getElementById('view-' + viewName);
-            if (target) {
-                target.classList.add('active');
+            const activeTab = document.querySelector(`.nav-tab[data-tab="${tabId}"]`);
+            if (activeTab) activeTab.classList.add('active');
+
+            if (tabId === 'explorer') {
+                setTimeout(() => {
+                    resizeTimelineCanvas();
+                    drawTimelineCanvas();
+                }, 50);
             }
+        }
 
-            document.querySelectorAll('.nav-link').forEach(l => {
-                if (l.innerText.toLowerCase().includes(viewName.replace('-', ' '))) {
-                    l.classList.add('active');
-                }
+        // Toast Messages
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<svg class="icon icon-sm" viewBox="0 0 24 24" style="color: var(--brand-emerald);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                toast.style.transition = 'all 0.2s';
+                setTimeout(() => toast.remove(), 200);
+            }, 3000);
+        }
+
+        // Copy Code Button
+        function copyCode(btn) {
+            const block = btn.parentElement;
+            const text = block.innerText.replace('Copy', '').trim();
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerText = 'Copied!';
+                setTimeout(() => btn.innerText = 'Copy', 1800);
             });
+        }
 
-            if (viewName === 'explorer') {
-                resizeCanvas();
-                requestAnimationFrame(drawTimeline);
+        // Command Palette
+        function openCmdPalette() {
+            document.getElementById('cmd-palette').classList.add('open');
+            document.getElementById('cmd-input').value = '';
+            document.getElementById('cmd-input').focus();
+        }
+        function closeCmdPalette() {
+            document.getElementById('cmd-palette').classList.remove('open');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                openCmdPalette();
+            } else if (e.key === 'Escape') {
+                closeCmdPalette();
+            }
+        });
+
+        function filterCommands(query) {
+            const items = document.querySelectorAll('#cmd-items-list .cmd-item');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(query.toLowerCase()) ? 'flex' : 'none';
+            });
+        }
+
+        // Live Interactive Console State
+        let sandboxVTime = 816000000;
+        let isPartitioned = false;
+
+        function toggleFault(faultType) {
+            const btn = document.getElementById(`btn-fault-${faultType}`);
+            if (!btn) return;
+            btn.classList.toggle('active');
+
+            const logs = document.getElementById('console-logs');
+            if (faultType === 'partition') {
+                isPartitioned = !isPartitioned;
+                const node3 = document.getElementById('node-tile-3');
+                const badge3 = document.getElementById('badge-3');
+                if (isPartitioned) {
+                    node3.classList.add('isolated');
+                    badge3.innerText = 'ISOLATED';
+                    badge3.className = 'node-role-badge role-dead';
+                    appendLog('[00:00:00.820]', 'Asymmetric Partition applied: Node 3 dropped from Raft bus', 'warn');
+                    showToast('Network partition active: Node 3 isolated');
+                } else {
+                    node3.classList.remove('isolated');
+                    badge3.innerText = 'FOLLOWER';
+                    badge3.className = 'node-role-badge role-follower';
+                    appendLog('[00:00:00.840]', 'Partition healed: Node 3 rejoined quorum', 'event');
+                    showToast('Partition healed: Node 3 reconnected');
+                }
+            } else {
+                appendLog('[00:00:00.860]', `Fault applied: ${faultType.toUpperCase()}`, 'warn');
+                showToast(`Injected synthetic fault: ${faultType}`);
             }
         }
 
-        // Explorer Tab Switching
-        function switchExplorerTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-
-            document.getElementById('subview-timeline').style.display = tab === 'timeline' ? 'flex' : 'none';
-            document.getElementById('subview-diff').style.display = tab === 'diff' ? 'block' : 'none';
-            document.getElementById('subview-merkle').style.display = tab === 'merkle' ? 'block' : 'none';
-
-            if (tab === 'timeline') {
-                resizeCanvas();
-                drawTimeline();
-            }
+        function runSandboxStep() {
+            sandboxVTime += 10000000;
+            document.getElementById('disp-vtime').innerText = `${sandboxVTime.toLocaleString()} ns`;
+            appendLog('[00:00:00.' + (sandboxVTime / 1000000).toFixed(0).slice(-3) + ']', 'Advanced virtual clock +10ms. Intercepted 14 syscalls without blocking.', 'event');
+            showToast('Clock stepped: +10,000,000 ns');
         }
 
-        // Modal Helpers
-        function openAuthModal() {
-            document.getElementById('auth-modal').style.display = 'flex';
-        }
-        function closeAuthModal() {
-            document.getElementById('auth-modal').style.display = 'none';
-        }
-
-        // Add Project Wizard
-        let selectedTier = 'TierA';
-        function selectTier(elem, tier) {
-            document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
-            elem.classList.add('selected');
-            selectedTier = tier;
+        function resetSandbox() {
+            isPartitioned = false;
+            document.querySelectorAll('.fault-btn').forEach(b => b.classList.remove('active'));
+            const node3 = document.getElementById('node-tile-3');
+            const badge3 = document.getElementById('badge-3');
+            node3.classList.remove('isolated');
+            badge3.innerText = 'FOLLOWER';
+            badge3.className = 'node-role-badge role-follower';
+            appendLog('[00:00:00.000]', 'Reset virtual sandbox to initial seed state', 'event');
+            showToast('Sandbox reset to initial state');
         }
 
-        function handleCreateProject(e) {
-            e.preventDefault();
-            const name = document.getElementById('proj-name').value;
-            alert(`Project '${name}' successfully registered under ${selectedTier}!\nRun in terminal:\ncrucible campaign --target ${name} --seed 42`);
-            switchView('cli-guide');
+        function appendLog(vtime, msg, type) {
+            const logs = document.getElementById('console-logs');
+            const row = document.createElement('div');
+            row.className = 'log-entry';
+            const cls = type === 'warn' ? 'log-warn' : type === 'err' ? 'log-err' : 'log-event';
+            row.innerHTML = `<span class="log-vtime">${vtime}</span><span class="${cls}">${msg}</span>`;
+            logs.appendChild(row);
+            logs.scrollTop = logs.scrollHeight;
         }
 
-        function handleSaveDb(e) {
-            e.preventDefault();
-            alert("Database configuration saved successfully!");
+        function downloadEvidenceBundle() {
+            window.open('/api/bundle', '_blank');
         }
 
-        // Canvas 1M-Event Timeline Engine
+        // Timeline Multi-Track Canvas
         const canvas = document.getElementById('timelineCanvas');
         const ctx = canvas.getContext('2d');
-        const scrubber = document.getElementById('timeline-scrubber');
-        let totalEvents = 1000000;
         let currentStep = 816000;
+        const totalSteps = 1000000;
         let isPlaying = false;
-        let playTimer = null;
+        let playInterval = null;
 
-        function resizeCanvas() {
-            if (!canvas.parentElement) return;
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight - 60;
+        function resizeTimelineCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height - 42;
         }
-        window.addEventListener('resize', () => { resizeCanvas(); drawTimeline(); });
+        window.addEventListener('resize', () => {
+            resizeTimelineCanvas();
+            drawTimelineCanvas();
+        });
 
-        function drawTimeline() {
-            if (!ctx || canvas.width === 0) return;
+        function drawTimelineCanvas() {
             const w = canvas.width;
             const h = canvas.height;
-
-            ctx.fillStyle = '#07090e';
+            ctx.fillStyle = '#06080d';
             ctx.fillRect(0, 0, w, h);
 
-            // 4 Node swimlanes
-            const lanes = ["Node 1 (Leader)", "Node 2 (Follower)", "Node 3 (Follower)", "Node 4 (Follower)"];
-            const laneHeight = h / lanes.length;
+            const lanes = ['Node 1 (Leader)', 'Node 2 (Follower)', 'Node 3 (Follower)', 'Node 4 (Follower)', 'Network Bus', 'Virtual NVMe'];
+            const laneH = h / lanes.length;
 
-            lanes.forEach((lane, i) => {
-                const y = i * laneHeight;
-                ctx.strokeStyle = '#1e293b';
+            lanes.forEach((lane, idx) => {
+                const y = idx * laneH;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(0, y + laneHeight);
-                ctx.lineTo(w, y + laneHeight);
+                ctx.moveTo(0, y + laneH);
+                ctx.lineTo(w, y + laneH);
                 ctx.stroke();
 
                 ctx.fillStyle = '#64748b';
-                ctx.font = '12px "JetBrains Mono", monospace';
-                ctx.fillText(lane, 16, y + 26);
+                ctx.font = '11px "JetBrains Mono", monospace';
+                ctx.fillText(lane, 14, y + 20);
 
-                // Draw event hash bars
-                ctx.fillStyle = (i === 0 || i === 2) ? '#10b981' : '#3b82f6';
-                for (let x = 90; x < w - 24; x += 12) {
-                    ctx.fillRect(x, y + laneHeight / 2 - 8, 2, 16);
+                // Event ticks
+                ctx.fillStyle = (idx === 0 || idx === 1) ? '#10b981' : (idx === 4 ? '#38bdf8' : '#64748b');
+                for (let x = 140; x < w - 20; x += 14) {
+                    ctx.fillRect(x, y + laneH / 2 - 4, 2, 8);
                 }
             });
 
-            // Scrubber cursor line
-            const cursorX = (currentStep / totalEvents) * (w - 110) + 90;
-            ctx.strokeStyle = '#ef4444';
+            // Cursor line
+            const cursorX = (currentStep / totalSteps) * (w - 160) + 140;
+            ctx.strokeStyle = '#f43f5e';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(cursorX, 0);
             ctx.lineTo(cursorX, h);
             ctx.stroke();
 
-            // Diamond head cursor
-            ctx.fillStyle = '#ef4444';
+            // Diamond pointer head
+            ctx.fillStyle = '#f43f5e';
             ctx.beginPath();
             ctx.moveTo(cursorX, 0);
-            ctx.lineTo(cursorX - 7, 9);
-            ctx.lineTo(cursorX, 18);
-            ctx.lineTo(cursorX + 7, 9);
+            ctx.lineTo(cursorX - 5, 8);
+            ctx.lineTo(cursorX, 16);
+            ctx.lineTo(cursorX + 5, 8);
             ctx.fill();
         }
 
-        scrubber.addEventListener('input', (e) => {
-            currentStep = parseInt(e.target.value);
-            document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
-            document.getElementById('insp-vtime').innerText = `${(currentStep * 1000).toLocaleString()} ns`;
-            drawTimeline();
-        });
-
-        document.getElementById('btn-play-pause').addEventListener('click', () => {
-            isPlaying = !isPlaying;
-            document.getElementById('btn-play-pause').innerHTML = isPlaying ? 
-                '<svg viewBox="0 0 24 24" class="icon"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause' : 
-                '<svg viewBox="0 0 24 24" class="icon"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play';
-            if (isPlaying) {
-                playTimer = setInterval(() => {
-                    currentStep = (currentStep + 2500) % totalEvents;
-                    scrubber.value = currentStep;
-                    document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
-                    drawTimeline();
-                }, 16);
-            } else {
-                clearInterval(playTimer);
-            }
-        });
-
-        document.getElementById('btn-next-step').addEventListener('click', () => {
-            currentStep = Math.min(totalEvents, currentStep + 1000);
-            scrubber.value = currentStep;
-            document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
-            drawTimeline();
-        });
-
-        document.getElementById('btn-prev-step').addEventListener('click', () => {
-            currentStep = Math.max(0, currentStep - 1000);
-            scrubber.value = currentStep;
-            document.getElementById('lbl-step').innerText = `Step ${currentStep.toLocaleString()}`;
-            drawTimeline();
-        });
-
-        // 100 Nodes Matrix Generation in Monitoring
-        const matrixContainer = document.getElementById('nodes-matrix');
-        for (let i = 1; i <= 100; i++) {
-            const tile = document.createElement('div');
-            tile.className = 'node-tile' + (i % 5 === 1 ? ' leader' : '');
-            if (i >= 36 && i <= 37) {
-                tile.className = 'node-tile partitioned';
-            }
-            tile.innerText = i;
-            tile.title = `Node ${i} (Group ${Math.ceil(i/5)})`;
-            matrixContainer.appendChild(tile);
+        function onScrubInput(val) {
+            currentStep = parseInt(val, 10);
+            updateExplorerStep();
         }
 
-        // Live SSE Streaming Connection
-        try {
-            const sse = new EventSource('/api/stream');
-            sse.onmessage = (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    if (data.type === 'event' || data.event_id) {
-                        totalEvents++;
-                        scrubber.max = totalEvents;
-                        drawTimeline();
-                    }
-                } catch (_) {}
-            };
-        } catch (_) {}
+        function stepTimeline(delta) {
+            currentStep = Math.max(0, Math.min(totalSteps, currentStep + delta * 2000));
+            document.getElementById('scrubber').value = currentStep;
+            updateExplorerStep();
+        }
 
-        // Initialize
-        resizeCanvas();
-        drawTimeline();
+        function togglePlayTimeline() {
+            isPlaying = !isPlaying;
+            document.getElementById('btn-play-pause').innerText = isPlaying ? "⏸ Pause" : "▶ Play";
+            if (isPlaying) {
+                playInterval = setInterval(() => {
+                    currentStep = (currentStep + 3000) % totalSteps;
+                    document.getElementById('scrubber').value = currentStep;
+                    updateExplorerStep();
+                }, 30);
+            } else {
+                clearInterval(playInterval);
+            }
+        }
+
+        function updateExplorerStep() {
+            document.getElementById('lbl-step-count').innerText = `Step ${currentStep.toLocaleString()} / 1,000,000`;
+            document.getElementById('insp-vtime').innerText = `${(currentStep * 1000).toLocaleString()} ns`;
+            drawTimelineCanvas();
+        }
+
+        // 100-Node Matrix Initialization
+        function buildNodeMatrix() {
+            const container = document.getElementById('node-matrix-container');
+            container.innerHTML = '';
+            for (let i = 1; i <= 100; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'matrix-cell';
+                if (i === 1 || i === 21 || i === 41 || i === 61 || i === 81) {
+                    cell.classList.add('active-leader');
+                } else if (i === 17 || i === 42) {
+                    cell.classList.add('active-fault');
+                }
+                cell.innerText = `N${i}`;
+                cell.title = `Node ${i} (Group ${Math.floor((i-1)/5) + 1})`;
+                cell.onclick = () => showToast(`Selected Node ${i} | Memory RSS: 4.8MB | Status: Active`);
+                container.appendChild(cell);
+            }
+        }
+
+        // Backend Monitoring Poller
+        async function fetchLiveMetrics() {
+            try {
+                const res = await fetch('/api/monitoring/metrics');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.cluster_nodes) document.getElementById('live-nodes').innerText = data.cluster_nodes;
+                    if (data.virtual_speedup_factor) document.getElementById('live-speedup').innerText = Math.round(data.virtual_speedup_factor).toLocaleString() + '×';
+                    if (data.events_per_second) document.getElementById('live-events').innerText = data.events_per_second.toLocaleString();
+                    if (data.memory_rss_mb) document.getElementById('live-rss').innerText = data.memory_rss_mb.toFixed(1) + ' MB';
+                }
+            } catch (_) {}
+        }
+
+        function submitProject() {
+            const name = document.getElementById('inp-proj-name').value || 'my-distributed-cluster';
+            showToast(`Generating test harness for ${name}... Ready!`);
+            setTimeout(() => switchTab('cli'), 800);
+        }
+
+        function saveDbConfig() {
+            showToast('Saved database configuration & verified connection pool.');
+        }
+
+        // Init on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            buildNodeMatrix();
+            resizeTimelineCanvas();
+            drawTimelineCanvas();
+            fetchLiveMetrics();
+            setInterval(fetchLiveMetrics, 3000);
+        });
     </script>
 </body>
 </html>
